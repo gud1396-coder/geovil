@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>지오빌 클라우드 매니저 v7.5 (GitHub/관리자모드판)</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800&display=swap');
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; }
+        body { background: #121214; color: #f3f4f6; padding: 20px; }
+        .container { max-width: 1300px; margin: 0 auto; background: #1a1a1e; padding: 25px; border-radius: 20px; border: 1px solid #2a2a32; }
+        header { text-align: center; margin-bottom: 25px; border-bottom: 2px solid #2a2a32; padding-bottom: 15px; }
+        header h1 { font-size: 2.2rem; background: linear-gradient(135deg, #4facfe, #00f2fe); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .screen { display: none; } .active { display: block; }
+        .setup-box { background: #222227; padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #32323d; }
+        input, select, textarea { padding: 10px; background: #121214; border: 1px solid #3b82f6; border-radius: 6px; color: #fff; width: 100%; margin-top: 5px; font-size: 1rem; font-family: 'Pretendard', monospace; }
+        textarea { resize: vertical; min-height: 120px; font-size: 0.85rem; line-height: 1.4; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 10px; }
+
+        .draft-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-top: 15px; }
+        .draft-card { background: #18181c; border: 2px solid #32323d; padding: 10px; border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.2s; }
+        .draft-card img { width: 100%; height: 140px; object-fit: contain; border-radius: 6px; display: block; margin-bottom: 8px; background: #121214; }
+        .draft-card.selected { border-color: #00f2fe; background: #1a2e3b; box-shadow: 0 0 15px rgba(0,242,254,0.3); transform: translateY(-3px); z-index: 10; }
+
+        .layout { display: flex; gap: 20px; }
+        .sidebar { width: 320px; background: #222227; padding: 15px; border-radius: 12px; border: 1px solid #32323d; flex-shrink: 0; }
+        .main-board { flex: 1; min-width: 0; }
+
+        .player-card { background: #2a2a35; padding: 12px; border-radius: 8px; margin-bottom: 10px; border: 2px solid transparent; transition: all 0.2s; cursor: pointer; }
+        .player-card:hover { transform: translateY(-2px); border-color: #a78bfa; box-shadow: 0 4px 10px rgba(167, 139, 250, 0.1); }
+        .player-card.active-turn { border-color: #00f2fe; background: #1e2d3d; box-shadow: 0 0 10px rgba(0,242,254,0.2); }
+
+        .turn-panel { background: #1e1e24; padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #38bdf8; }
+        .policy-banner { background: linear-gradient(135deg, #4c1d95, #2e1065); border: 1px solid #a78bfa; padding: 15px; border-radius: 10px; margin-bottom: 15px; }
+        .policy-banner h3 { color: #c084fc; font-size: 1.1rem; margin-bottom: 5px; display: flex; justify-content: space-between; }
+        .policy-banner p { font-size: 0.9rem; color: #e2e8f0; line-height: 1.4; }
+
+        .seat-banner { background:#0c2a33; border:1px solid #00f2fe; padding:12px 15px; border-radius:10px; margin-bottom:15px; font-size:0.95rem; }
+        .seat-banner b { color:#00f2fe; }
+        .seat-pick-overlay { background:#1e1e24; border:2px dashed #00f2fe; padding:25px; border-radius:12px; text-align:center; margin-bottom:20px; }
+        .seat-pick-overlay h2 { margin-bottom:15px; color:#00f2fe; }
+        .seat-pick-overlay .btn { margin:5px; min-width:160px; }
+        .not-my-turn { background:#2a1a1a; border:1px solid #f87171; color:#fca5a5; padding:10px; border-radius:8px; text-align:center; font-weight:700; margin-bottom:12px; }
+
+        .report-ok { background:#0f2a16; border:1px solid #22c55e; color:#86efac; padding:10px; border-radius:8px; margin-top:10px; font-size:0.9rem; }
+        .report-warn { background:#2a1f0c; border:1px solid #f5af19; color:#fcd34d; padding:10px; border-radius:8px; margin-top:10px; font-size:0.85rem; line-height:1.6; }
+
+        .tab-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 30px; border-bottom: 2px solid #32323d; padding-bottom: 0; }
+        .tab-btn { background: #222227; color: #9ca3af; border: 2px solid #32323d; border-bottom: none; padding: 10px 18px; border-radius: 10px 10px 0 0; font-weight: 700; cursor: pointer; font-size: 1.05rem; transition: all 0.2s; position: relative; bottom: -2px; }
+        .tab-btn.active { background: #1e1e24; color: #00f2fe; border-color: #00f2fe; border-bottom-color: #1e1e24; z-index: 2; box-shadow: 0 -3px 10px rgba(0,242,254,0.1); }
+        .tab-content-area { background: #1e1e24; padding: 20px; border: 2px solid #00f2fe; border-top: none; border-radius: 0 12px 12px 12px; min-height: 400px; }
+
+        .market-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
+        .game-card { background: #18181c; border-radius: 12px; padding: 12px; border: 3px solid #32323d; position: relative; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.4); display: flex; flex-direction: column; justify-content: flex-end; }
+        .game-card img { width: 100%; height: 160px; object-fit: contain; border-radius: 8px; margin-bottom: 10px; background: #121214; border: 1px solid #2a2a32; display: block; }
+
+        .img-fallback { width: 100%; height: 160px; display: flex; align-items: center; justify-content: center; background: #2a2a35; border-radius: 8px; margin-bottom: 10px; font-weight: bold; padding: 10px; color: #a78bfa; word-break: keep-all; border: 1px solid #2a2a32; }
+
+        .game-card.blue { border-color: #2e7cb6; }
+        .game-card.green { border-color: #3b7a3e; }
+        .game-card.purple { border-color: #7c3aed; }
+        .game-card.red { border-color: #b91c1c; }
+
+        .card-dice-badge { background: #00f2fe; color: #111; padding: 2px 8px; border-radius: 6px; font-weight: 800; font-size: 0.9rem; }
+        .card-cost-badge { background: #f5af19; color: #111; padding: 2px 6px; border-radius: 50%; font-weight: 800; font-size: 0.85rem; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; }
+        .card-top-inner { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; margin-bottom: 10px; }
+
+        .landmark-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 10px; }
+        .landmark-card { background: #2a2a35; padding: 10px; border-radius: 8px; text-align: center; opacity: 0.5; font-size: 0.85rem; border: 2px solid #4b5563; }
+        .landmark-card.built { border-color: #f5af19; opacity: 1; background: #3a2a10; box-shadow: 0 0 10px rgba(245,175,25,0.2); }
+        .btn { padding: 10px 15px; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; display: inline-block; text-align: center; transition: all 0.2s; }
+        .btn-primary { background: #3b82f6; color: #fff; } .btn-success { background: #16a34a; color: #fff; }
+        .btn-accent { background: #00f2fe; color: #111; } .btn-disabled { background: #4b5563 !important; color: #9ca3af !important; cursor: not-allowed; opacity: 0.4; }
+        button:disabled { background: #4b5563 !important; color: #9ca3af !important; cursor: not-allowed; opacity: 0.4; }
+        .log-box { background: #121214; padding: 10px; border-radius: 6px; height: 180px; overflow-y: auto; font-size: 0.8rem; margin-top: 15px; line-height: 1.4; color: #cbd5e1; }
+        details summary { cursor: pointer; font-weight: 700; color: #00f2fe; padding: 5px 0; }
+    </style>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>🌍 지오빌 (Geo-Ville) 클라우드 웹보드 v7.5</h1>
+        <p id="roomIdentity">방에 접속되지 않았습니다.</p>
+    </header>
+
+    <div id="roomScreen" class="screen active">
+        <div class="setup-box">
+            <h3>🔑 모둠 방 입장 (동일한 방 이름을 치면 실시간 화면 동기화)</h3>
+            <input type="text" id="roomNameInput" placeholder="예: 1조, 2조, 지질연구방">
+            <button class="btn btn-accent" style="width:100%; margin-top:10px;" onclick="connectToRoom()">모둠 방 연결하기</button>
+        </div>
+    </div>
+
+    <div id="setupScreen" class="screen">
+        <div class="setup-box">
+            <h3>🖥️ 게임 진행 방식 선택</h3>
+            <select id="gameModeSelect">
+                <option value="hotseat">👥 한 컴퓨터로 함께 (핫시트 모드) — 누구나 모든 턴 조작 가능</option>
+                <option value="online">📡 각자 기기로 접속 (온라인 모드) — 자기 차례에만 조작 가능</option>
+            </select>
+            <p style="font-size:0.85rem; color:#9ca3af; margin-top:8px;">※ 온라인 모드에서는 게임 시작 후 각 기기에서 자기 좌석(플레이어)을 한 번 선택합니다.</p>
+        </div>
+
+        <!-- ▼▼▼ [신규] 관리자 카드 데이터 입력 (CSV 직접 붙여넣기) ▼▼▼ -->
+        <div class="setup-box">
+            <details id="adminDetails">
+                <summary>🛠️ 관리자 모드 — 카드 데이터(CSV) 직접 입력 / 점검</summary>
+                <p style="font-size:0.85rem; color:#9ca3af; margin:10px 0;">
+                    구글 시트에서 셀 전체(A1부터)를 복사해 아래에 붙여넣고 [적용]을 누르세요.
+                    네트워크 없이도 100% 동작합니다. (열 순서: A그룹 · B암석 · C타입 · D이름 · E주사위 · F보상타입 · G보상값 · H비용 · I이미지)
+                </p>
+                <textarea id="adminCsvInput" placeholder="group,rockType,type,name,dice,rewardType,rewardValue,cost,imgName&#10;A,vol,green,한탄강 현무암,3,coin,1,2,..."></textarea>
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <button class="btn btn-success" style="flex:1;" onclick="applyPastedCsv()">📋 붙여넣은 CSV로 카드 적용 & 점검</button>
+                    <button class="btn btn-primary" style="flex:1;" onclick="reloadFromSheet()">🔄 구글 시트에서 다시 불러오기</button>
+                </div>
+                <div id="csvReport"></div>
+            </details>
+        </div>
+        <!-- ▲▲▲ -->
+
+        <div class="setup-box">
+            <h3>👥 플레이어 3인 이름 등록</h3>
+            <div class="grid-3">
+                <input type="text" id="p1Name" value="플레이어A">
+                <input type="text" id="p2Name" value="플레이어B">
+                <input type="text" id="p3Name" value="플레이어C">
+            </div>
+        </div>
+        <div class="setup-box">
+            <h3>🃏 마켓 배치 카드 선출 (<span id="draftCount" style="color:#00f2fe; font-weight:bold;">0</span> / 12장 선택 필수)
+                <span style="font-size:0.85rem; color:#9ca3af;"> · 현재 인식된 카드: <span id="loadedCount">0</span>장</span>
+            </h3>
+            <div class="draft-grid" id="draftGridArea"></div>
+            <button class="btn btn-success" style="width:100%; margin-top:20px; font-size:1.1rem; padding:12px;" onclick="tryStartGame()">🎮 게임판 조립 및 시작하기</button>
+            <button class="btn" style="width:100%; background:#ef4444; color:#fff; margin-top:15px; font-size:0.9rem;" onclick="forceResetRoomCurrent()">⚠️ 방 데이터 초기화 (처음부터 다시)</button>
+        </div>
+    </div>
+
+    <div id="gameScreen" class="screen">
+        <div class="layout">
+            <div class="sidebar">
+                <h3 style="font-size:1.1rem; margin-bottom:10px;">📊 실시간 스코어 <span style="font-size:0.75rem; color:#a78bfa;">(클릭 시 카드 상세)</span></h3>
+                <div id="statusBoard"></div>
+                <button class="btn" style="width:100%; background:#ef4444; color:#fff; margin-top:15px;" onclick="sendUndo()">◀ 실수 되돌리기</button>
+                <button class="btn" style="width:100%; background:#4b5563; color:#fff; margin-top:8px; font-size:0.85rem;" onclick="changeSeat()">🔁 내 좌석 다시 선택 (온라인)</button>
+                <button class="btn" style="width:100%; background:#4b5563; color:#fff; margin-top:8px; font-size:0.85rem;" onclick="forceResetRoomCurrent()">⚠️ 방 폭파 및 새 판 짜기</button>
+                <div class="log-box" id="logBox"></div>
+            </div>
+            <div class="main-board">
+                <div class="turn-panel">
+                    <div id="seatBannerArea"></div>
+                    <h2 style="display:flex; justify-content:space-between;">
+                        <span>🎲 차례: <span id="activeName" style="color:#00f2fe;">-</span></span>
+                        <span id="roundDisplay" style="font-size:1rem; color:#a78bfa;">1 라운드</span>
+                    </h2>
+
+                    <div id="turnLockArea"></div>
+                    <div class="policy-banner" id="policyBannerArea"></div>
+
+                    <div style="background:#121214; padding:15px; border-radius:8px; margin-top:10px;">
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <input type="number" id="diceVal1" min="1" max="6" placeholder="주사위1" style="width:90px; font-size:1.2rem; text-align:center;">
+                            <input type="number" id="diceVal2" min="1" max="6" placeholder="주사위2" style="width:90px; font-size:1.2rem; text-align:center; display:none;">
+                            <button class="btn btn-accent" id="diceResolveBtn" onclick="sendDiceResolve()">🎲 눈금 확정 & 수확</button>
+                        </div>
+                    </div>
+                    <div style="margin-top:10px; display:flex; gap:10px;">
+                        <button class="btn" id="policyABtn" style="background:#6d28d9; color:#fff; display:none;" onclick="sendPolicyA()">📜 에코 환전 (잎새2 ➔ 5골드)</button>
+                        <button class="btn" id="passBtn" style="background:#475569; color:#fff;" onclick="sendPass()">⏭️ 차례 넘기기 (패스)</button>
+                    </div>
+                    <div style="margin-top:15px; border-top:1px dashed #444; padding-top:12px;">
+                        <h3>🏰 내 핵심 랜드마크 완공도 <span style="font-size:0.8rem; color:#9ca3af;">(4개 모두 완공 시 승리)</span></h3>
+                        <div class="landmark-grid" id="landmarkGrid"></div>
+                    </div>
+                </div>
+
+                <div class="tab-container" id="tabContainer"></div>
+                <div id="tabContentArea" class="tab-content-area"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ⚠️ [1. 파이어베이스 설정]
+    const firebaseConfig = {
+        apiKey: "AIzaSyDB2vIgW9916bUVXmNOQUyRHa-gRj8h7hk",
+        authDomain: "giovil-c8c05.firebaseapp.com",
+        databaseURL: "https://giovil-c8c05-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "giovil-c8c05",
+        storageBucket: "giovil-c8c05.firebasestorage.app",
+        messagingSenderId: "497937574269",
+        appId: "1:497937574269:web:80a9112e7251fff3f70414"
+      };
+
+    // ⚠️ [2. 구글 스프레드시트 CSV 링크] (관리자 모드로 붙여넣으면 이 링크 없이도 동작)
+    const googleSheetCsvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS6NRt4jKmmkjh2kn87d7YrTVrZAz2oanec5mAzBGKSYpRqsR0WFaPFbsZBUjGUbpiHK9HgkeKjMwtW/pub?gid=0&single=true&output=csv";
+
+    // ⚠️ [3. 이미지 설정] ─────────────────────────────────────────────
+    // 방법 A (추천): 이 HTML과 같은 위치에 images 폴더를 만들고, 사진 파일명을 '카드이름.jpg' 로 저장.
+    //                그러면 시트 I열을 비워둬도 자동으로 images/카드이름.jpg 를 찾아 씁니다. (URL 붙여넣기 불필요)
+    // 방법 B: I열에 사진 파일명(예: 1.jpg)만 적으면 images/1.jpg 로 매핑.
+    // 방법 C: I열에 구글드라이브 ID나 전체 URL을 적어도 인식.
+    const IMAGE_BASE = "images/";   // 이미지 폴더 경로
+    const AUTO_IMG_EXT = "jpg";     // I열을 비웠을 때 자동으로 붙일 확장자 (png면 "png"로)
+    // ──────────────────────────────────────────────────────────────
+
+    const VALID_TYPES = ['blue','green','red','purple'];
+    const VALID_REWARDS = ['leaf','coin','coin_per_vol','coin_per_sed','swap_green','steal'];
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let roomName = "";
+    let selectedDraftIds = [];
+    let currentGameState = null;
+    let activeTab = 'market';
+    let local24Cards = [];
+    let mySeat = null;
+    let stateRef = null;
+
+    const landmarkSpecs = [
+        { name: "🚌 지질트레일 셔틀버스", gCost: 6, lCost: 0 },
+        { name: "🏪 지오푸드 복합타운", gCost: 12, lCost: 3 },
+        { name: "🔋 신재생에너지 교육센터", gCost: 22, lCost: 8 },
+        { name: "🏅 유네스코 세계인증서", gCost: 35, lCost: 15 }
+    ];
+
+    const backup24Cards = [];
+    for(let i=1; i<=24; i++) {
+        backup24Cards.push({
+            id: i, group: i <= 8 ? "A" : (i <= 16 ? "B" : "C"),
+            rockType: i % 3 === 0 ? "vol" : (i % 3 === 1 ? "sed" : "none"),
+            type: i % 4 === 0 ? "blue" : (i % 4 === 1 ? "green" : (i % 4 === 2 ? "purple" : "red")),
+            name: `기본 지질 유산 ${i}호`, triggerDice: [(i % 6) + 1],
+            rewardType: "coin", rewardValue: 1, cost: (i % 5) + 2, imgUrl: ""
+        });
+    }
+
+    function isMyTurn(state) {
+        if(!state) return false;
+        if(state.gameMode !== 'online') return true;
+        return mySeat !== null && mySeat === state.activePlayerIdx;
+    }
+
+    function guardTurn() {
+        if(!currentGameState) { alert("네트워크 로딩 중입니다."); return false; }
+        if(!isMyTurn(currentGameState)) {
+            const who = currentGameState.players[currentGameState.activePlayerIdx].name;
+            alert(`지금은 [${who}]님의 차례입니다. 자기 차례에만 조작할 수 있어요.`);
+            return false;
+        }
+        return true;
+    }
+
+    async function connectToRoom() {
+        roomName = document.getElementById('roomNameInput').value.trim();
+        if(!roomName) return alert("모둠 방 이름을 입력하세요.");
+        document.getElementById('roomIdentity').innerText = `📡 연결된 공간: [ ${roomName} 방 ]`;
+
+        try {
+            const saved = localStorage.getItem('geoville_seat_' + roomName);
+            mySeat = (saved !== null && saved !== "") ? parseInt(saved) : null;
+        } catch(e) { mySeat = null; }
+
+        // 편의상 자동 로드(실패해도 관리자 모드 붙여넣기로 진행 가능)
+        local24Cards = await loadCardsWithFallback();
+
+        if(stateRef) { stateRef.off(); }
+        stateRef = db.ref(`geoville/rooms/${roomName}/gameState`);
+        stateRef.on('value', (snapshot) => {
+            const state = snapshot.val();
+            if(!state) {
+                currentGameState = null;
+                showScreen('setupScreen');
+                renderDraftGrid();
+            } else {
+                currentGameState = state;
+                if(state.status === 'playing') {
+                    showScreen('gameScreen');
+                    renderGameUI(state);
+                } else {
+                    showScreen('setupScreen');
+                    renderDraftGrid();
+                }
+            }
+        });
+    }
+
+    async function loadCardsWithFallback() {
+        try {
+            const r = await fetch(googleSheetCsvUrl);
+            if(r.ok) return parseCsvToCards(await r.text());
+        } catch(e) { console.warn("직접 CSV 로드 실패, 프록시 시도:", e); }
+        try {
+            const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(googleSheetCsvUrl);
+            const r2 = await fetch(proxyUrl);
+            if(r2.ok) return parseCsvToCards(await r2.text());
+        } catch(e) { console.warn("프록시 CSV 로드도 실패:", e); }
+        console.warn("시트 로드 실패 → 백업 카드 사용. 관리자 모드로 직접 붙여넣어 주세요.");
+        return [...backup24Cards];
+    }
+
+    // [신규] 구글 시트에서 다시 불러오기 (관리자 버튼)
+    async function reloadFromSheet() {
+        document.getElementById('csvReport').innerHTML = '<div class="report-warn">⏳ 구글 시트에서 불러오는 중...</div>';
+        local24Cards = await loadCardsWithFallback();
+        selectedDraftIds = [];
+        showCsvReport(local24Cards);
+        renderDraftGrid();
+    }
+
+    // [신규] 관리자 textarea의 CSV 적용
+    function applyPastedCsv() {
+        const txt = document.getElementById('adminCsvInput').value;
+        if(!txt.trim()) return alert("CSV 내용을 붙여넣어 주세요.");
+        try {
+            local24Cards = parseCsvToCards(txt);
+            selectedDraftIds = [];
+            showCsvReport(local24Cards);
+            renderDraftGrid();
+        } catch(e) {
+            alert("CSV 파싱 오류: " + e.message);
+        }
+    }
+
+    // [신규] 카드 데이터 검증 (밀린 열 / 오타 자동 탐지)
+    function validateCards(list) {
+        let problems = [];
+        list.forEach((c, idx) => {
+            const tag = `${idx+1}번째 카드 [${c.name || '이름없음'}]`;
+            if(!VALID_TYPES.includes(c.type))
+                problems.push(`⚠️ ${tag}: C열 type 값이 '${c.type}' → blue/green/red/purple 중 하나여야 함 (열이 밀렸을 가능성)`);
+            if(!VALID_REWARDS.includes(c.rewardType))
+                problems.push(`⚠️ ${tag}: F열 rewardType 값이 '${c.rewardType}' → 허용값이 아님 (열이 밀렸을 가능성)`);
+            if(!c.triggerDice || c.triggerDice.length === 0)
+                problems.push(`⚠️ ${tag}: E열 dice 값이 비었거나 숫자가 아님`);
+        });
+        return problems;
+    }
+
+    function showCsvReport(list) {
+        const el = document.getElementById('csvReport');
+        const problems = validateCards(list);
+        if(problems.length === 0) {
+            el.innerHTML = `<div class="report-ok">✅ 총 ${list.length}장 정상 인식. 모든 열이 올바릅니다.</div>`;
+        } else {
+            el.innerHTML = `<div class="report-warn"><b>총 ${list.length}장 인식 / 점검 필요 ${problems.length}건</b><br>` +
+                problems.join('<br>') +
+                `<br><br>↳ 위 카드 행을 시트에서 확인하세요. 보통 D열(이름)에 주사위 값이 섞여 칸이 한 칸씩 밀린 경우입니다.</div>`;
+        }
+        document.getElementById('loadedCount').innerText = list.length;
+    }
+
+    // [신규] 유연한 이미지 경로 해석기
+    // 1) 전체 URL(http..)이면 그대로  2) 25자+ 토큰이면 구글드라이브 ID로 간주
+    // 3) 그 외 문자열이면 images/ 폴더의 파일명으로 간주  4) 비어 있으면 카드이름.jpg 자동 추정
+    function resolveImg(raw, cardName) {
+        raw = (raw || "").trim();
+        if(raw) {
+            if(/^https?:\/\//i.test(raw)) return raw;
+            let m = raw.match(/[-\w]{25,}/);
+            if(m && m[0]) return "https://lh3.googleusercontent.com/d/" + m[0] + "=w400";
+            return IMAGE_BASE + encodeURIComponent(raw);
+        }
+        if(cardName) return IMAGE_BASE + encodeURIComponent(cardName) + "." + AUTO_IMG_EXT;
+        return "";
+    }
+
+    // 첫 줄이 헤더인지 자동 판정 (E열이 숫자가 아니거나 C열 type이 유효치 않으면 헤더로 봄)
+    function looksLikeHeader(cols) {
+        const diceOk = cols[4] && !isNaN(parseInt(cols[4]));
+        const typeOk = cols[2] && VALID_TYPES.includes(cols[2].toLowerCase().trim());
+        return !(diceOk && typeOk);
+    }
+
+    function parseCsvToCards(csvText) {
+        const lines = csvText.split('\n').map(l => l.replace(/\r$/,'').trim()).filter(l => l.length > 0);
+        if(lines.length === 0) return [...backup24Cards];
+
+        const firstCols = lines[0].split(',').map(c => c.replace(/^"|"$/g, '').trim());
+        let start = looksLikeHeader(firstCols) ? 1 : 0;
+
+        let list = [];
+        let idCounter = 1;
+        for(let i = start; i < lines.length; i++) {
+            const cols = lines[i].split(',').map(c => c.replace(/^"|"$/g, '').trim());
+            if(cols.length < 8) continue;
+
+            const name = cols[3] || `유산 ${idCounter}`;
+            list.push({
+                id: idCounter++,
+                group: cols[0] || "C",
+                rockType: (cols[1] || "none").toLowerCase(),
+                type: (cols[2] || "green").toLowerCase(),
+                name: name,
+                // 단일 값 기준이지만 |,공백,/ 도 안전하게 허용
+                triggerDice: (cols[4] || "1").split(/[|,/\s]+/).map(n => parseInt(n, 10)).filter(n => !isNaN(n)),
+                rewardType: (cols[5] || "coin").toLowerCase(),
+                rewardValue: parseInt(cols[6]) || 1,
+                cost: parseInt((cols[7] || "2").replace(/[^0-9]/g, '')) || 2,
+                imgUrl: resolveImg(cols[8] ? cols[8] : "", name)
+            });
+        }
+
+        if (list.length < 24) {
+            for(let i = list.length; i < 24; i++) list.push(backup24Cards[i]);
+        }
+        return list.slice(0, 24);
+    }
+
+    function imgTag(card) {
+        if(card.imgUrl) {
+            return `<img src="${card.imgUrl}" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="img-fallback" style="display:none;">${card.name}</div>`;
+        }
+        return `<div class="img-fallback" style="display:flex;">${card.name}</div>`;
+    }
+
+    function forceResetRoomCurrent() {
+        if(confirm("현재 진행 중인 방 정보를 지우고 대기 상태로 되돌리시겠습니까?")) {
+            db.ref(`geoville/rooms/${roomName}`).remove();
+            location.reload();
+        }
+    }
+
+    function renderDraftGrid() {
+        const grid = document.getElementById('draftGridArea'); grid.innerHTML = '';
+        document.getElementById('loadedCount').innerText = local24Cards.length;
+        local24Cards.forEach(card => {
+            const isSel = selectedDraftIds.includes(card.id) ? 'selected' : '';
+            grid.innerHTML += `
+                <div class="draft-card ${isSel}" onclick="toggleDraft(${card.id})">
+                    ${imgTag(card)}
+                    <div style="font-weight:bold; font-size:0.9rem; margin-top:8px; color:#e2e8f0;">${card.name}</div>
+                </div>
+            `;
+        });
+        document.getElementById('draftCount').innerText = selectedDraftIds.length;
+    }
+
+    function toggleDraft(id) {
+        if(selectedDraftIds.includes(id)) { selectedDraftIds = selectedDraftIds.filter(i => i !== id); }
+        else {
+            if(selectedDraftIds.length >= 12) return alert("이미 12장을 모두 선택하셨습니다.");
+            selectedDraftIds.push(id);
+        }
+        renderDraftGrid();
+    }
+
+    function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    function switchTab(tabId) {
+        activeTab = tabId;
+        if(currentGameState) renderGameUI(currentGameState);
+    }
+
+    function claimSeat(idx) {
+        mySeat = idx;
+        try { localStorage.setItem('geoville_seat_' + roomName, idx); } catch(e) {}
+        if(currentGameState) renderGameUI(currentGameState);
+    }
+    function changeSeat() {
+        if(!currentGameState || currentGameState.gameMode !== 'online')
+            return alert("온라인 모드에서만 좌석을 선택합니다. (핫시트 모드는 누구나 조작 가능)");
+        mySeat = null;
+        try { localStorage.removeItem('geoville_seat_' + roomName); } catch(e) {}
+        renderGameUI(currentGameState);
+    }
+
+    function tryStartGame() {
+        if(selectedDraftIds.length !== 12) return alert("12장의 카드를 엄선해 주세요!");
+        const gameMode = document.getElementById('gameModeSelect').value;
+        const p1 = document.getElementById('p1Name').value.trim() || "플레이어A";
+        const p2 = document.getElementById('p2Name').value.trim() || "플레이어B";
+        const p3 = document.getElementById('p3Name').value.trim() || "플레이어C";
+
+        let marketCards = []; let reserveCards = [];
+        local24Cards.forEach(c => {
+            if(selectedDraftIds.includes(c.id)) { marketCards.push({ ...c, count: 6 }); }
+            else { reserveCards.push(c); }
+        });
+
+        marketCards.sort((a, b) => {
+            let diceA = (a.triggerDice && a.triggerDice.length > 0) ? parseInt(a.triggerDice[0]) : 99;
+            let diceB = (b.triggerDice && b.triggerDice.length > 0) ? parseInt(b.triggerDice[0]) : 99;
+            return diceA - diceB;
+        });
+
+        const initialCard = { id: 0, name: "기본 자산 카드", type: "green", rockType: "none", triggerDice: [1], rewardType: "coin", rewardValue: 1 };
+        const initialPolicies = ['A', 'B', 'C'].sort(() => Math.random() - 0.5);
+
+        const initialGameState = {
+            status: 'playing',
+            gameMode: gameMode,
+            players: [
+                { id: 0, name: p1, gold: 5, leaf: 0, cards: [initialCard], landmarks: [false,false,false,false] },
+                { id: 1, name: p2, gold: 5, leaf: 0, cards: [initialCard], landmarks: [false,false,false,false] },
+                { id: 2, name: p3, gold: 5, leaf: 0, cards: [initialCard], landmarks: [false,false,false,false] }
+            ],
+            marketCards: marketCards, reserveCards: reserveCards,
+            activePlayerIdx: 0, currentRound: 1, diceRolledThisTurn: false, policyAUsedThisTurn: false,
+            policyOrder: initialPolicies,
+            logs: ["[시스템] 게임이 시작되었습니다. (모드: " + (gameMode==='online'?'온라인':'핫시트') + ")"]
+        };
+        db.ref(`geoville/rooms/${roomName}/history`).remove();
+        db.ref(`geoville/rooms/${roomName}/gameState`).set(initialGameState);
+    }
+
+    function getCalculatedReward(player, card) {
+        if (!card || !card.rewardType) return parseInt(card ? card.rewardValue : 0) || 0;
+        let baseValue = parseInt(card.rewardValue) || 0;
+        if (card.rewardType === 'coin_per_vol') {
+            const count = (player.cards || []).filter(c => c && c.rockType === 'vol').length;
+            return baseValue * count;
+        }
+        if (card.rewardType === 'coin_per_sed') {
+            const count = (player.cards || []).filter(c => c && c.rockType === 'sed').length;
+            return baseValue * count;
+        }
+        return baseValue;
+    }
+
+    function renderGameUI(state) {
+        const seatArea = document.getElementById('seatBannerArea');
+        const lockArea = document.getElementById('turnLockArea');
+        if(state.gameMode === 'online') {
+            if(mySeat === null) {
+                seatArea.innerHTML = `
+                    <div class="seat-pick-overlay">
+                        <h2>📡 온라인 모드 — 이 기기는 누구인가요?</h2>
+                        <p style="color:#9ca3af; margin-bottom:12px;">자기 자신을 한 번만 선택하세요. (브라우저에 저장됩니다)</p>
+                        ${state.players.map((p,i)=>`<button class="btn btn-accent" onclick="claimSeat(${i})">🙋 ${p.name}</button>`).join('')}
+                    </div>`;
+            } else {
+                seatArea.innerHTML = `<div class="seat-banner">이 기기 = <b>${state.players[mySeat].name}</b> 님 · 좌석 변경은 사이드바의 [내 좌석 다시 선택] 버튼</div>`;
+            }
+        } else {
+            seatArea.innerHTML = `<div class="seat-banner">👥 핫시트 모드 — 한 컴퓨터에서 모든 플레이어가 함께 진행합니다.</div>`;
+        }
+
+        const myTurn = isMyTurn(state);
+        const blockOnline = (state.gameMode === 'online' && mySeat !== null && !myTurn);
+        lockArea.innerHTML = blockOnline
+            ? `<div class="not-my-turn">⏳ 지금은 [${state.players[state.activePlayerIdx].name}]님의 차례입니다. 잠시만 기다려 주세요.</div>`
+            : '';
+
+        document.getElementById('roundDisplay').innerText = `${state.currentRound} 라운드`;
+        const activePlayer = state.players[state.activePlayerIdx];
+        document.getElementById('activeName').innerText = activePlayer.name;
+        document.getElementById('diceVal2').style.display = activePlayer.landmarks[0] ? "inline-block" : "none";
+        document.getElementById('logBox').innerHTML = (state.logs || []).map(l => `<div>${l}</div>`).join('');
+
+        const diceBtn = document.getElementById('diceResolveBtn');
+        diceBtn.disabled = state.diceRolledThisTurn || !myTurn;
+        diceBtn.className = diceBtn.disabled ? "btn btn-disabled" : "btn btn-accent";
+
+        let activePolicyCode = state.policyOrder[(state.currentRound - 1) % 3];
+        let pName = ""; let pDesc = "";
+        if(activePolicyCode === 'A') { pName = "📜 법안 A. 에코 투어리즘 환전법"; pDesc = "내 차례에 [에코 환전] 버튼을 눌러 잎새 2개를 5골드로 교환할 수 있습니다."; }
+        if(activePolicyCode === 'B') { pName = "🛡️ 법안 B. 환경 보호 실드법"; pDesc = "상대방의 레드카드 발동 시, 내 잎새 1개를 소모하여 방어할 수 있습니다."; }
+        if(activePolicyCode === 'C') { pName = "🛑 법안 C. 친환경 개발 제한법"; pDesc = "상점 마켓에서 레드카드를 구매할 때 골드 외에 추가로 잎새 2개를 기부해야 합니다."; }
+
+        document.getElementById('policyBannerArea').innerHTML = `
+            <h3>${pName} <span style="font-size:0.8rem; color:#9ca3af;">(3개년 순환제)</span></h3>
+            <p>${pDesc}</p>
+        `;
+
+        const sb = document.getElementById('statusBoard'); sb.innerHTML = '';
+        state.players.forEach((p, idx) => {
+            let disc = 0; (p.cards || []).forEach(c => {
+                if (c && c.type==='blue') { if(c.rockType=='vol') disc+=1; if(c.rockType=='meta') disc+=2; if(c.rockType=='sed') disc+=3; }
+            });
+            const isCur = idx === state.activePlayerIdx ? 'active-turn' : '';
+            let cardCount = ((p.cards || []).length > 0) ? (p.cards.length - 1) : 0;
+            const meTag = (state.gameMode==='online' && mySeat===idx) ? ' 🟢(나)' : '';
+
+            sb.innerHTML += `
+                <div class="player-card ${isCur}" onclick="switchTab(${idx})">
+                    <strong>${p.name}${meTag}</strong> (🏰 랜드마크: ${p.landmarks.filter(l=>l).length}/4 완공)<br>
+                    💰 골드: <span style="color:#f5af19">${p.gold}</span>개 | 🍃 잎새: <span style="color:#22c55e">${p.leaf}</span>개 (할인: -${disc}G)<br>
+                    <span style="font-size:0.8rem; color:#a3a3a3;">보유 카드: <strong>${cardCount}장</strong> (터치하여 상세 보기)</span>
+                </div>
+            `;
+        });
+
+        let myDiscount = 0; (activePlayer.cards || []).forEach(c => {
+            if (c && c.type==='blue') { if(c.rockType=='vol') myDiscount+=1; if(c.rockType=='meta') myDiscount+=2; if(c.rockType=='sed') myDiscount+=3; }
+        });
+
+        const lg = document.getElementById('landmarkGrid'); lg.innerHTML = '';
+        landmarkSpecs.forEach((spec, sIdx) => {
+            const isBuilt = activePlayer.landmarks[sIdx];
+            let actualCost = Math.max(1, spec.gCost - myDiscount);
+            let canBuild = myTurn && state.diceRolledThisTurn && !isBuilt && activePlayer.gold >= actualCost && activePlayer.leaf >= spec.lCost;
+            let buyAttr = canBuild
+                ? `class="btn btn-primary btn-sm" onclick="sendBuildLandmark(${sIdx}, '${spec.name}', ${actualCost}, ${spec.lCost})"`
+                : `disabled class="btn btn-disabled btn-sm"`;
+            lg.innerHTML += `
+                <div class="landmark-card ${isBuilt?'built':''}">
+                    <strong>${spec.name}</strong><br>${actualCost}G / 🍃${spec.lCost}
+                    <button ${buyAttr} style="margin-top:4px; width:100%; font-size:0.75rem;">${isBuilt?'완공됨':'건설'}</button>
+                </div>
+            `;
+        });
+
+        const tabContainer = document.getElementById('tabContainer');
+        tabContainer.innerHTML = `
+            <button class="tab-btn ${activeTab === 'market' ? 'active' : ''}" onclick="switchTab('market')">🏪 중앙 상점</button>
+            <button class="tab-btn ${activeTab === 0 ? 'active' : ''}" onclick="switchTab(0)">🎒 ${state.players[0].name}</button>
+            <button class="tab-btn ${activeTab === 1 ? 'active' : ''}" onclick="switchTab(1)">🎒 ${state.players[1].name}</button>
+            <button class="tab-btn ${activeTab === 2 ? 'active' : ''}" onclick="switchTab(2)">🎒 ${state.players[2].name}</button>
+        `;
+
+        const tabContent = document.getElementById('tabContentArea');
+        tabContent.innerHTML = '';
+
+        if (activeTab === 'market') {
+            let mgHTML = '<div class="market-grid">';
+            (state.marketCards || []).forEach((card, marketIndex) => {
+                let actualCost = Math.max(1, card.cost - myDiscount);
+                let lReq = (card.type === 'red' && activePolicyCode === 'C') ? 2 : 0;
+                let canBuy = myTurn && state.diceRolledThisTurn && card.count > 0 && activePlayer.gold >= actualCost && activePlayer.leaf >= lReq;
+                let buyAttr = canBuy
+                    ? `class="btn btn-success btn-sm" onclick="sendBuyCard(${marketIndex}, ${actualCost}, ${lReq})"`
+                    : `disabled class="btn btn-disabled btn-sm"`;
+
+                let costDisplay = `<span style="color:#f5af19; font-weight:bold;">${actualCost}G</span>`;
+                if (lReq > 0) { costDisplay += ` + <span style="color:#22c55e; font-weight:bold;">🍃${lReq}</span>`; }
+
+                mgHTML += `
+                    <div class="game-card ${card.type}">
+                        <div class="card-top-inner">
+                            <span class="card-dice-badge">🎲 ${card.triggerDice.join(',')}</span>
+                            <span class="card-cost-badge">${actualCost}</span>
+                        </div>
+                        ${imgTag(card)}
+                        <div style="font-size:0.85rem; border-top:1px dashed #3a3a42; padding-top:10px; margin-top:auto;">
+                            인수: ${costDisplay} | 남음: <strong>${card.count}</strong>
+                        </div>
+                        <button ${buyAttr} style="width:100%; margin-top:8px; padding:10px;">자원 인수</button>
+                    </div>
+                `;
+            });
+            mgHTML += '</div>';
+            tabContent.innerHTML = mgHTML;
+        } else {
+            let p = state.players[activeTab];
+            let ogHTML = '<div class="market-grid">';
+
+            if (!p.cards || p.cards.length <= 1) {
+                ogHTML += `<p style="color:#9ca3af; grid-column:span 3; text-align:center; padding:20px; font-size:1.1rem;">아직 인수한 지질 자산이 없습니다.</p>`;
+            } else {
+                p.cards.forEach(card => {
+                    if (card.id === 0) return;
+                    ogHTML += `
+                        <div class="game-card ${card.type}">
+                            <div class="card-top-inner">
+                                <span class="card-dice-badge">🎲 ${card.triggerDice.join(',')}</span>
+                            </div>
+                            ${imgTag(card)}
+                            <div style="font-size:0.9rem; border-top:1px dashed #3a3a42; padding-top:10px; margin-top:auto; color:#22c55e; font-weight:bold;">
+                                ✅ 보유 중
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            ogHTML += '</div>';
+            tabContent.innerHTML = ogHTML;
+        }
+
+        const passBtn = document.getElementById('passBtn');
+        passBtn.disabled = !(state.diceRolledThisTurn && myTurn);
+        passBtn.className = passBtn.disabled ? "btn btn-disabled" : "btn";
+
+        const btnA = document.getElementById('policyABtn');
+        if (activePolicyCode === 'A') {
+            btnA.style.display = 'inline-block';
+            const canEco = myTurn && state.diceRolledThisTurn && !state.policyAUsedThisTurn && activePlayer.leaf >= 2;
+            btnA.disabled = !canEco;
+            btnA.className = canEco ? "btn" : "btn btn-disabled";
+        } else {
+            btnA.style.display = 'none';
+        }
+    }
+
+    function sendDiceResolve() {
+        try {
+            if(!guardTurn()) return;
+            if(currentGameState.diceRolledThisTurn) return alert("이미 정산이 끝났습니다. 카드 인수 또는 패스를 진행하세요.");
+            const v1 = parseInt(document.getElementById('diceVal1').value);
+            const rawV2 = document.getElementById('diceVal2').value;
+            const v2 = parseInt(rawV2) || 0;
+            if(isNaN(v1) || v1 < 1 || v1 > 6) return alert("주사위1 눈금을 1~6 사이로 입력해 주세요.");
+            if(rawV2 !== "" && (v2 < 1 || v2 > 6)) return alert("주사위2 눈금을 1~6 사이로 입력해 주세요.");
+
+            let total = v1 + v2;
+            let isDouble = (v1 === v2 && v2 > 0);
+
+            db.ref(`geoville/rooms/${roomName}/history`).push(JSON.stringify(currentGameState));
+
+            let state = JSON.parse(JSON.stringify(currentGameState));
+            let activePlayer = state.players[state.activePlayerIdx];
+            let activePolicyCode = state.policyOrder[(state.currentRound - 1) % 3];
+
+            if(!Array.isArray(state.logs)) state.logs = [];
+            state.logs.unshift(`🎲 [주사위 결과] 총합: [ ${total} ] (${activePlayer.name} 차례)`);
+
+            // [진단] 이번 총합에 발동되는 카드 목록 로그
+            let _hits = [];
+            state.players.forEach(pp => (pp.cards || []).forEach(cc => {
+                if(cc && cc.id !== 0 && Array.isArray(cc.triggerDice) && cc.triggerDice.includes(total)) {
+                    _hits.push(`${pp.name}:${cc.name}(${cc.type})`);
+                }
+            }));
+            state.logs.unshift(`🔎 [발동 판정] 총합 ${total} → ${_hits.length > 0 ? _hits.join(' / ') : '발동 카드 없음'}`);
+
+            // 레드카드
+            state.players.forEach(p => {
+                if(p.id === state.activePlayerIdx) return;
+                if (Array.isArray(p.cards)) {
+                    p.cards.forEach(card => {
+                        if(card && card.type === 'red' && Array.isArray(card.triggerDice) && card.triggerDice.includes(total)) {
+                            if(parseInt(p.leaf) < 1) { state.logs.unshift(`🛑 [영업정지] ${p.name} 잎새 부족으로 가동 실패.`); return; }
+                            let isShielded = false;
+                            if (activePolicyCode === 'B' && parseInt(activePlayer.leaf) >= 1) {
+                                if (confirm(`🛡️ [법안 B: 환경 보호 실드법 작동]\n상대(${p.name})가 [${card.name}] 시설로 약탈을 시도합니다!\n내 잎새 1개를 버리고 방어하시겠습니까?`)) {
+                                    activePlayer.leaf = Math.max(0, (parseInt(activePlayer.leaf)||0) - 1);
+                                    p.leaf = Math.max(0, (parseInt(p.leaf)||0) - 1);
+                                    isShielded = true;
+                                    state.logs.unshift(`🛡️ [방어 성공] ${activePlayer.name}님이 잎새 1개를 소모하여 약탈을 막아냈습니다! (공격자 ${p.name} 잎새 -1)`);
+                                }
+                            }
+                            if (!isShielded) {
+                                let amt = Math.min(parseInt(activePlayer.gold) || 0, parseInt(card.rewardValue) || 0);
+                                activePlayer.gold = (parseInt(activePlayer.gold) || 0) - amt;
+                                p.gold = (parseInt(p.gold) || 0) + amt;
+                                p.leaf = Math.max(0, (parseInt(p.leaf) || 0) - 1);
+                                state.logs.unshift(`💥 [난개발 약탈] ${p.name}이 ${activePlayer.name}로부터 ${amt}G 약탈 및 잎새 1개 소모.`);
+                            }
+                        }
+                    });
+                }
+            });
+
+            // 블루카드
+            state.players.forEach(p => {
+                if (Array.isArray(p.cards)) {
+                    p.cards.forEach(card => {
+                        if(card && card.type === 'blue' && Array.isArray(card.triggerDice) && card.triggerDice.includes(total)) {
+                            let rwdAmt = getCalculatedReward(p, card);
+                            if(card.rewardType === 'leaf') {
+                                p.leaf = (parseInt(p.leaf) || 0) + rwdAmt;
+                                state.logs.unshift(`🍃 [보존 수확] ${p.name} 잎새 +${rwdAmt}개.`);
+                            } else {
+                                p.gold = (parseInt(p.gold) || 0) + rwdAmt;
+                                state.logs.unshift(`💰 [보존 수확] ${p.name} 골드 +${rwdAmt}G.`);
+                            }
+                        }
+                    });
+                }
+            });
+
+            // 그린카드 (현재 차례 플레이어)
+            if (activePlayer && Array.isArray(activePlayer.cards)) {
+                activePlayer.cards.forEach(card => {
+                    if(card && card.type === 'green' && Array.isArray(card.triggerDice) && card.triggerDice.includes(total)) {
+                        let rwdAmt = getCalculatedReward(activePlayer, card);
+                        if(activePlayer.landmarks && activePlayer.landmarks[1] && card.rewardType && (card.rewardType === 'coin' || card.rewardType.startsWith('coin_per_'))) rwdAmt += 1;
+                        if(card.rewardType === 'leaf') {
+                            activePlayer.leaf = (parseInt(activePlayer.leaf) || 0) + rwdAmt;
+                            state.logs.unshift(`✨ [관광 가치] ${activePlayer.name} 잎새 +${rwdAmt}개.`);
+                        } else {
+                            activePlayer.gold = (parseInt(activePlayer.gold) || 0) + rwdAmt;
+                            state.logs.unshift(`✨ [지역 수익] ${activePlayer.name} 골드 +${rwdAmt}G 수확.`);
+                        }
+                    }
+                });
+            }
+
+            // 퍼플카드
+            if (activePlayer && Array.isArray(activePlayer.cards)) {
+                activePlayer.cards.forEach(card => {
+                    if(card && card.type === 'purple' && Array.isArray(card.triggerDice) && card.triggerDice.includes(total)) {
+                        if(card.rewardType === 'swap_green') {
+                            let myGreenCards = (activePlayer.cards || []).filter(c => c && c.type === 'green');
+                            let otherPlayersWithGreen = state.players.filter(op => op && op.id !== state.activePlayerIdx && (op.cards || []).some(c => c && c.type === 'green'));
+                            if (myGreenCards.length === 0 || otherPlayersWithGreen.length === 0) {
+                                state.logs.unshift(`🟣 [교환 불발] ${activePlayer.name}의 무역 계약 실패 (그린 카드 부족).`);
+                            } else {
+                                let targetPlayerName = prompt(`🔄 [지질 카드 무역 협상]\n교환할 상대방 이름을 정확히 입력하세요.\n상대방 목록: ${otherPlayersWithGreen.map(op=>op.name).join(', ')}`);
+                                let targetPlayer = state.players.find(op => op && op.name === targetPlayerName && op.id !== state.activePlayerIdx);
+                                if (targetPlayer) {
+                                    let myTargetCardName = prompt(`넘겨줄 나의 그린 카드 이름:\n내 목록: ${myGreenCards.map(c=>c.name).join(', ')}`);
+                                    let oppTargetCardName = prompt(`뺏어올 상대 그린 카드 이름:\n상대 목록: ${targetPlayer.cards.filter(c => c && c.type === 'green').map(c=>c.name).join(', ')}`);
+                                    let myCardIdx = activePlayer.cards.findIndex(c => c && c.type === 'green' && c.name === myTargetCardName);
+                                    let oppCardIdx = targetPlayer.cards.findIndex(c => c && c.type === 'green' && c.name === oppTargetCardName);
+                                    if (myCardIdx !== -1 && oppCardIdx !== -1) {
+                                        let myCard = activePlayer.cards.splice(myCardIdx, 1)[0];
+                                        let oppCard = targetPlayer.cards.splice(oppCardIdx, 1)[0];
+                                        activePlayer.cards.push(oppCard);
+                                        targetPlayer.cards.push(myCard);
+                                        state.logs.unshift(`🟣 [무역 성공] ${activePlayer.name}의 [${myCard.name}] ↔ ${targetPlayer.name}의 [${oppCard.name}] 교환!`);
+                                    } else { alert("카드 이름 오기재로 무산되었습니다."); }
+                                } else { alert("플레이어 이름 오기재로 무산되었습니다."); }
+                            }
+                        } else {
+                            state.players.forEach(otherP => {
+                                if(!otherP || otherP.id === state.activePlayerIdx) return;
+                                let stealAmt = Math.min(parseInt(otherP.gold) || 0, parseInt(card.rewardValue) || 0);
+                                otherP.gold = (parseInt(otherP.gold) || 0) - stealAmt;
+                                activePlayer.gold = (parseInt(activePlayer.gold) || 0) + stealAmt;
+                                state.logs.unshift(`🟣 [문화 집단강탈] ${activePlayer.name}이 ${otherP.name}에게서 ${stealAmt}G 강탈.`);
+                            });
+                        }
+                    }
+                });
+            }
+
+            state.diceRolledThisTurn = true;
+            state.logs.unshift(`📢 수확 정산 완료! [${activePlayer.name}]은 마켓 카드를 구매하거나 [차례 넘기기(패스)]를 누르세요.`);
+            if(isDouble && activePlayer.landmarks && activePlayer.landmarks[2]) { activePlayer.grantExtraTurn = true; state.logs.unshift("🔋 더블 보너스 가동! 추가 연속 차례가 예약되었습니다."); }
+
+            db.ref(`geoville/rooms/${roomName}/gameState`).set(state);
+        } catch (err) {
+            alert("❌ 정산 엔진 연산 오류!\n" + err.message);
+            console.error(err);
+        }
+    }
+
+    function sendBuyCard(marketIndex, gCost, lCost) {
+        if(!guardTurn()) return;
+        let state = JSON.parse(JSON.stringify(currentGameState));
+        let activePlayer = state.players[state.activePlayerIdx];
+        let card = state.marketCards[marketIndex];
+        if((parseInt(activePlayer.gold)||0) < gCost || (parseInt(activePlayer.leaf)||0) < lCost || card.count <= 0) {
+            return alert("자원이 부족하거나 품절된 카드입니다.");
+        }
+        db.ref(`geoville/rooms/${roomName}/history`).push(JSON.stringify(currentGameState));
+
+        activePlayer.gold = (parseInt(activePlayer.gold) || 0) - gCost;
+        activePlayer.leaf = Math.max(0, (parseInt(activePlayer.leaf) || 0) - lCost);
+        card.count -= 1;
+        if(!activePlayer.cards) activePlayer.cards = [];
+        activePlayer.cards.push({ id: card.id, name: card.name, type: card.type, rockType: card.rockType, triggerDice: card.triggerDice, rewardType: card.rewardType, rewardValue: card.rewardValue, imgUrl: card.imgUrl });
+        state.logs.unshift(`🛒 [인수완료] ${activePlayer.name}님이 [${card.name}]을 소유했습니다.`);
+
+        if(card.count === 0) {
+            if(state.reserveCards && state.reserveCards.length > 0) {
+                let nextCard = state.reserveCards.shift(); nextCard.count = 6;
+                state.marketCards[marketIndex] = nextCard;
+                state.logs.unshift(`♻️ [상점 리필] [${card.name}] 품절로 새 카드 [${nextCard.name}]이 진열되었습니다!`);
+            }
+        }
+        shiftNext(state);
+    }
+
+    function sendBuildLandmark(idx, name, gCost, lCost) {
+        if(!guardTurn()) return;
+        let state = JSON.parse(JSON.stringify(currentGameState));
+        let activePlayer = state.players[state.activePlayerIdx];
+        if((parseInt(activePlayer.gold)||0) < gCost || (parseInt(activePlayer.leaf)||0) < lCost) {
+            return alert("골드 또는 잎새가 부족합니다.");
+        }
+        db.ref(`geoville/rooms/${roomName}/history`).push(JSON.stringify(currentGameState));
+
+        activePlayer.gold = (parseInt(activePlayer.gold) || 0) - gCost;
+        activePlayer.leaf = Math.max(0, (parseInt(activePlayer.leaf) || 0) - lCost);
+        activePlayer.landmarks[idx] = true;
+        state.logs.unshift(`🏗️ [랜드마크] ${activePlayer.name}님이 [${name}]를 완공했습니다.`);
+
+        if(activePlayer.landmarks.every(l => l)) {
+            state.logs.unshift(`🎉 [게임 종료] ${activePlayer.name}님이 랜드마크 4개를 모두 완공하여 승리!`);
+            db.ref(`geoville/rooms/${roomName}/gameState`).set(state);
+            alert(`🎉 게임 완결! 최종 마스터 승리자: ${activePlayer.name}\n(랜드마크 4개 전부 완공)`);
+            db.ref(`geoville/rooms/${roomName}`).remove();
+            location.reload();
+        } else { shiftNext(state); }
+    }
+
+    function sendPolicyA() {
+        if(!guardTurn()) return;
+        let activePlayer = currentGameState.players[currentGameState.activePlayerIdx];
+        if((parseInt(activePlayer.leaf)||0) < 2) return alert("잎새가 2개 이상일 때만 환전할 수 있습니다.");
+        if(currentGameState.policyAUsedThisTurn) return alert("이번 차례에 이미 환전했습니다.");
+        if(!currentGameState.diceRolledThisTurn) return alert("주사위 정산 후 환전할 수 있습니다.");
+
+        db.ref(`geoville/rooms/${roomName}/history`).push(JSON.stringify(currentGameState));
+        let state = JSON.parse(JSON.stringify(currentGameState));
+        let ap = state.players[state.activePlayerIdx];
+        ap.leaf = Math.max(0, (parseInt(ap.leaf) || 0) - 2);
+        ap.gold = (parseInt(ap.gold) || 0) + 5;
+        state.policyAUsedThisTurn = true;
+        state.logs.unshift(`♻️ [특별환전] ${ap.name} 잎새 2개 ➔ 5골드 교환.`);
+        db.ref(`geoville/rooms/${roomName}/gameState`).set(state);
+    }
+
+    function sendPass() {
+        if(!guardTurn()) return;
+        if(!currentGameState.diceRolledThisTurn) return alert("주사위 정산 후 패스할 수 있습니다.");
+        db.ref(`geoville/rooms/${roomName}/history`).push(JSON.stringify(currentGameState));
+        let state = JSON.parse(JSON.stringify(currentGameState));
+        state.logs.unshift(`⏭️ [패스] ${state.players[state.activePlayerIdx].name} 차례 종료.`);
+        shiftNext(state);
+    }
+
+    function shiftNext(state) {
+        let activePlayer = state.players[state.activePlayerIdx];
+        if(activePlayer.grantExtraTurn) {
+            activePlayer.grantExtraTurn = false;
+        } else {
+            state.activePlayerIdx++;
+            if(state.activePlayerIdx >= state.players.length) {
+                state.activePlayerIdx = 0;
+                state.currentRound++;
+                if ((state.currentRound - 1) % 3 === 0) {
+                    state.policyOrder.sort(() => Math.random() - 0.5);
+                    state.logs.unshift(`📢 3개년 주기가 지나 새로운 정책 법안이 순환 셔플되었습니다!`);
+                }
+            }
+        }
+        state.diceRolledThisTurn = false; state.policyAUsedThisTurn = false;
+        document.getElementById('diceVal1').value = ''; document.getElementById('diceVal2').value = '';
+        db.ref(`geoville/rooms/${roomName}/gameState`).set(state);
+        activeTab = 'market';
+    }
+
+    function sendUndo() {
+        db.ref(`geoville/rooms/${roomName}/history`).limitToLast(1).once('value', (snapshot) => {
+            if(!snapshot.exists()) return alert("되돌릴 기록이 없습니다.");
+            snapshot.forEach((child) => {
+                db.ref(`geoville/rooms/${roomName}/gameState`).set(JSON.parse(child.val()));
+                db.ref(`geoville/rooms/${roomName}/history/` + child.key).remove();
+            });
+        });
+    }
+</script>
+</body>
+</html>
