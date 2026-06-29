@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>지오빌 클라우드 매니저 v7.5 (GitHub/관리자모드판)</title>
+    <title>지오빌 클라우드 매니저 v7.5 (GitHub)</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; }
@@ -77,6 +77,7 @@
     </style>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 </head>
 <body>
 <div class="container">
@@ -91,6 +92,33 @@
             <input type="text" id="roomNameInput" placeholder="예: 1조, 2조, 지질연구방">
             <button class="btn btn-accent" style="width:100%; margin-top:10px;" onclick="connectToRoom()">모둠 방 연결하기</button>
         </div>
+
+        <!-- ▼▼▼ [신규] 관리자 모드 ▼▼▼ -->
+        <div class="setup-box">
+            <details id="adminDetails">
+                <summary>🛠️ 관리자 모드 — 카드 데이터(CSV) 입력 / 점검 </summary>
+
+                <div id="adminLockArea" style="margin-top:12px;">
+                    <input type="password" id="adminPwInput" placeholder="관리자 비밀번호" onkeydown="if(event.key==='Enter'){unlockAdmin();}">
+                    <button class="btn btn-primary" style="width:100%; margin-top:8px;" onclick="unlockAdmin()">🔓 잠금 해제</button>
+                </div>
+
+                <div id="adminToolArea" style="display:none; margin-top:12px;">
+                    <p style="font-size:0.85rem; color:#9ca3af; margin-bottom:8px;">
+                        구글 시트에서 셀 전체(A1부터)를 복사해 아래에 붙여넣고 [적용]을 누르세요. 셀 안에 쉼표가 있어도 안전하게 처리됩니다.<br>
+                        (열 순서: A그룹 · B암석 · C타입 · D이름 · E주사위 · F보상타입 · G보상값 · H비용 · I이미지)
+                    </p>
+                    <textarea id="adminCsvInput" placeholder="group,rockType,type,name,dice,rewardType,rewardValue,cost,imgName&#10;A,vol,green,한탄강 현무암,3,coin,1,2,"></textarea>
+                    <div style="display:flex; gap:10px; margin-top:10px;">
+                        <button class="btn btn-success" style="flex:1;" onclick="applyPastedCsv()">📋 붙여넣은 CSV로 적용 &amp; 점검</button>
+                        <button class="btn btn-primary" style="flex:1;" onclick="reloadFromSheet()">🔄 구글 시트에서 불러오기</button>
+                    </div>
+                    <p style="font-size:0.85rem; margin-top:8px; color:#cbd5e1;">인식된 카드: <span id="adminLoadedCount" style="color:#00f2fe; font-weight:bold;">0</span>장 · 적용 후 방에 입장하면 이 카드들이 그대로 사용됩니다.</p>
+                    <div id="csvReport"></div>
+                </div>
+            </details>
+        </div>
+        <!-- ▲▲▲ -->
     </div>
 
     <div id="setupScreen" class="screen">
@@ -102,24 +130,6 @@
             </select>
             <p style="font-size:0.85rem; color:#9ca3af; margin-top:8px;">※ 온라인 모드에서는 게임 시작 후 각 기기에서 자기 좌석(플레이어)을 한 번 선택합니다.</p>
         </div>
-
-        <!-- ▼▼▼ [신규] 관리자 카드 데이터 입력 (CSV 직접 붙여넣기) ▼▼▼ -->
-        <div class="setup-box">
-            <details id="adminDetails">
-                <summary>🛠️ 관리자 모드 — 카드 데이터(CSV) 직접 입력 / 점검</summary>
-                <p style="font-size:0.85rem; color:#9ca3af; margin:10px 0;">
-                    구글 시트에서 셀 전체(A1부터)를 복사해 아래에 붙여넣고 [적용]을 누르세요.
-                    네트워크 없이도 100% 동작합니다. (열 순서: A그룹 · B암석 · C타입 · D이름 · E주사위 · F보상타입 · G보상값 · H비용 · I이미지)
-                </p>
-                <textarea id="adminCsvInput" placeholder="group,rockType,type,name,dice,rewardType,rewardValue,cost,imgName&#10;A,vol,green,한탄강 현무암,3,coin,1,2,..."></textarea>
-                <div style="display:flex; gap:10px; margin-top:10px;">
-                    <button class="btn btn-success" style="flex:1;" onclick="applyPastedCsv()">📋 붙여넣은 CSV로 카드 적용 & 점검</button>
-                    <button class="btn btn-primary" style="flex:1;" onclick="reloadFromSheet()">🔄 구글 시트에서 다시 불러오기</button>
-                </div>
-                <div id="csvReport"></div>
-            </details>
-        </div>
-        <!-- ▲▲▲ -->
 
         <div class="setup-box">
             <h3>👥 플레이어 3인 이름 등록</h3>
@@ -200,13 +210,18 @@
     const googleSheetCsvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS6NRt4jKmmkjh2kn87d7YrTVrZAz2oanec5mAzBGKSYpRqsR0WFaPFbsZBUjGUbpiHK9HgkeKjMwtW/pub?gid=0&single=true&output=csv";
 
     // ⚠️ [3. 이미지 설정] ─────────────────────────────────────────────
-    // 방법 A (추천): 이 HTML과 같은 위치에 images 폴더를 만들고, 사진 파일명을 '카드이름.jpg' 로 저장.
-    //                그러면 시트 I열을 비워둬도 자동으로 images/카드이름.jpg 를 찾아 씁니다. (URL 붙여넣기 불필요)
-    // 방법 B: I열에 사진 파일명(예: 1.jpg)만 적으면 images/1.jpg 로 매핑.
+    // 방법 A (추천): 저장소에 연도 폴더(예: 2026)를 만들고, 사진 파일명을 '카드이름.jpg' 로 저장.
+    //                그러면 시트 I열을 비워둬도 자동으로 2026/카드이름.jpg 를 찾아 씁니다. (URL 붙여넣기 불필요)
+    // 방법 B: I열에 사진 파일명(예: 1.jpg)만 적으면 2026/1.jpg 로 매핑.
     // 방법 C: I열에 구글드라이브 ID나 전체 URL을 적어도 인식.
-    const IMAGE_BASE = "images/";   // 이미지 폴더 경로
-    const AUTO_IMG_EXT = "jpg";     // I열을 비웠을 때 자동으로 붙일 확장자 (png면 "png"로)
+    const IMAGE_YEAR = "2026";              // ← 매년 이 값만 바꾸면 됩니다 (예: 2027). 사진은 저장소의 같은 이름 폴더에 보관.
+    const IMAGE_BASE = IMAGE_YEAR + "/";    // 예: 2026/
+    const AUTO_IMG_EXT = "jpg";             // I열을 비웠을 때 자동으로 붙일 확장자 (png면 "png"로)
     // ──────────────────────────────────────────────────────────────
+
+    // ⚠️ [4. 관리자 비밀번호] 카드 데이터 편집 도구를 여는 암호. 원하는 값으로 바꾸세요.
+    // (주의: 클라이언트 코드라 소스를 보면 노출됩니다. 학생의 실수 방지용 '소프트 잠금'입니다.)
+    const ADMIN_PASSWORD = "geo26";
 
     const VALID_TYPES = ['blue','green','red','purple'];
     const VALID_REWARDS = ['leaf','coin','coin_per_vol','coin_per_sed','swap_green','steal'];
@@ -221,6 +236,19 @@
     let local24Cards = [];
     let mySeat = null;
     let stateRef = null;
+    let cardsReady = false;   // [신규] 관리자 모드로 카드를 이미 설정했는지 → 접속 시 자동로드로 덮어쓰지 않게
+    let authPromise = null;   // [신규] 익명 인증(보안 규칙용)
+
+    // [신규] 익명 인증: 보안 규칙을 'auth != null'로 잠갔을 때 필요.
+    // (Firebase 콘솔 → Authentication → 로그인 방법 → 익명 → 사용 설정 해야 동작)
+    function ensureAuth() {
+        if(authPromise) return authPromise;
+        authPromise = firebase.auth().signInAnonymously()
+            .then(() => console.log("익명 인증 성공"))
+            .catch(e => console.warn("익명 인증 실패 — 보안 규칙이 auth를 요구하면 콘솔에서 '익명' 로그인을 켜세요:", e));
+        return authPromise;
+    }
+    ensureAuth();
 
     const landmarkSpecs = [
         { name: "🚌 지질트레일 셔틀버스", gCost: 6, lCost: 0 },
@@ -261,13 +289,17 @@
         if(!roomName) return alert("모둠 방 이름을 입력하세요.");
         document.getElementById('roomIdentity').innerText = `📡 연결된 공간: [ ${roomName} 방 ]`;
 
+        await ensureAuth();   // [신규] 보안 규칙 대비 인증 먼저
+
         try {
             const saved = localStorage.getItem('geoville_seat_' + roomName);
             mySeat = (saved !== null && saved !== "") ? parseInt(saved) : null;
         } catch(e) { mySeat = null; }
 
-        // 편의상 자동 로드(실패해도 관리자 모드 붙여넣기로 진행 가능)
-        local24Cards = await loadCardsWithFallback();
+        // [수정] 관리자 모드로 이미 카드를 설정했다면 자동로드로 덮어쓰지 않음
+        if(!cardsReady) {
+            local24Cards = await loadCardsWithFallback();
+        }
 
         if(stateRef) { stateRef.off(); }
         stateRef = db.ref(`geoville/rooms/${roomName}/gameState`);
@@ -305,9 +337,19 @@
     }
 
     // [신규] 구글 시트에서 다시 불러오기 (관리자 버튼)
+    // [신규] 관리자 비밀번호 잠금 해제
+    function unlockAdmin() {
+        const pw = document.getElementById('adminPwInput').value;
+        if(pw !== ADMIN_PASSWORD) { alert("비밀번호가 올바르지 않습니다."); return; }
+        document.getElementById('adminLockArea').style.display = 'none';
+        document.getElementById('adminToolArea').style.display = 'block';
+    }
+
     async function reloadFromSheet() {
-        document.getElementById('csvReport').innerHTML = '<div class="report-warn">⏳ 구글 시트에서 불러오는 중...</div>';
+        const rep = document.getElementById('csvReport');
+        if(rep) rep.innerHTML = '<div class="report-warn">⏳ 구글 시트에서 불러오는 중...</div>';
         local24Cards = await loadCardsWithFallback();
+        cardsReady = true;   // [신규] 설정 완료 → 접속 시 자동로드로 덮어쓰기 방지
         selectedDraftIds = [];
         showCsvReport(local24Cards);
         renderDraftGrid();
@@ -319,6 +361,7 @@
         if(!txt.trim()) return alert("CSV 내용을 붙여넣어 주세요.");
         try {
             local24Cards = parseCsvToCards(txt);
+            cardsReady = true;   // [신규] 설정 완료 → 접속 시 자동로드로 덮어쓰기 방지
             selectedDraftIds = [];
             showCsvReport(local24Cards);
             renderDraftGrid();
@@ -345,14 +388,17 @@
     function showCsvReport(list) {
         const el = document.getElementById('csvReport');
         const problems = validateCards(list);
-        if(problems.length === 0) {
-            el.innerHTML = `<div class="report-ok">✅ 총 ${list.length}장 정상 인식. 모든 열이 올바릅니다.</div>`;
-        } else {
-            el.innerHTML = `<div class="report-warn"><b>총 ${list.length}장 인식 / 점검 필요 ${problems.length}건</b><br>` +
-                problems.join('<br>') +
-                `<br><br>↳ 위 카드 행을 시트에서 확인하세요. 보통 D열(이름)에 주사위 값이 섞여 칸이 한 칸씩 밀린 경우입니다.</div>`;
+        if(el) {
+            if(problems.length === 0) {
+                el.innerHTML = `<div class="report-ok">✅ 총 ${list.length}장 정상 인식. 모든 열이 올바릅니다.</div>`;
+            } else {
+                el.innerHTML = `<div class="report-warn"><b>총 ${list.length}장 인식 / 점검 필요 ${problems.length}건</b><br>` +
+                    problems.join('<br>') +
+                    `<br><br>↳ 위 카드 행을 시트에서 확인하세요. 보통 이름 칸에 쉼표가 들어갔거나, 주사위 값이 이름 칸에 섞여 한 칸씩 밀린 경우입니다.</div>`;
+            }
         }
-        document.getElementById('loadedCount').innerText = list.length;
+        const lc = document.getElementById('loadedCount'); if(lc) lc.innerText = list.length;
+        const alc = document.getElementById('adminLoadedCount'); if(alc) alc.innerText = list.length;
     }
 
     // [신규] 유연한 이미지 경로 해석기
@@ -377,17 +423,42 @@
         return !(diceOk && typeOk);
     }
 
+    // [신규] 따옴표를 존중하는 CSV 한 줄 파서
+    // 구글 시트는 쉼표가 든 셀을 "..." 로 감싸 내보냅니다. 단순 split(',')은 그 안의 쉼표까지
+    // 칸으로 쪼개 한 칸씩 밀리게 만듭니다. 이 파서는 따옴표 안의 쉼표를 안전하게 무시합니다.
+    function parseCsvLine(line) {
+        const out = [];
+        let cur = '';
+        let inQ = false;
+        for(let i = 0; i < line.length; i++) {
+            const ch = line[i];
+            if(inQ) {
+                if(ch === '"') {
+                    if(line[i+1] === '"') { cur += '"'; i++; }  // "" → " (이스케이프)
+                    else inQ = false;
+                } else { cur += ch; }
+            } else {
+                if(ch === '"') inQ = true;
+                else if(ch === ',') { out.push(cur); cur = ''; }
+                else cur += ch;
+            }
+        }
+        out.push(cur);
+        return out.map(c => c.trim());
+    }
+
     function parseCsvToCards(csvText) {
-        const lines = csvText.split('\n').map(l => l.replace(/\r$/,'').trim()).filter(l => l.length > 0);
+        // 주의: 셀 안에 줄바꿈이 있으면 행이 깨질 수 있으니, 이미지 이름/카드 이름에는 줄바꿈을 넣지 마세요.
+        const lines = csvText.split('\n').map(l => l.replace(/\r$/,'')).filter(l => l.trim().length > 0);
         if(lines.length === 0) return [...backup24Cards];
 
-        const firstCols = lines[0].split(',').map(c => c.replace(/^"|"$/g, '').trim());
+        const firstCols = parseCsvLine(lines[0]);
         let start = looksLikeHeader(firstCols) ? 1 : 0;
 
         let list = [];
         let idCounter = 1;
         for(let i = start; i < lines.length; i++) {
-            const cols = lines[i].split(',').map(c => c.replace(/^"|"$/g, '').trim());
+            const cols = parseCsvLine(lines[i]);   // [수정] 따옴표 인식 파서 사용
             if(cols.length < 8) continue;
 
             const name = cols[3] || `유산 ${idCounter}`;
@@ -398,7 +469,7 @@
                 type: (cols[2] || "green").toLowerCase(),
                 name: name,
                 // 단일 값 기준이지만 |,공백,/ 도 안전하게 허용
-                triggerDice: (cols[4] || "1").split(/[|,/\s]+/).map(n => parseInt(n, 10)).filter(n => !isNaN(n)),
+                triggerDice: (cols[4] || "1").split(/[|/\s]+/).map(n => parseInt(n, 10)).filter(n => !isNaN(n)),
                 rewardType: (cols[5] || "coin").toLowerCase(),
                 rewardValue: parseInt(cols[6]) || 1,
                 cost: parseInt((cols[7] || "2").replace(/[^0-9]/g, '')) || 2,
