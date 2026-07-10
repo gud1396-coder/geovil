@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>지오빌 클라우드 (GitHub)</title>
+    <title>지오빌 클라우드</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; }
@@ -16,6 +16,7 @@
         input, select, textarea { padding: 10px; background: #121214; border: 1px solid #3b82f6; border-radius: 6px; color: #fff; width: 100%; margin-top: 5px; font-size: 1rem; font-family: 'Pretendard', monospace; }
         textarea { resize: vertical; min-height: 120px; font-size: 0.85rem; line-height: 1.4; }
         .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 10px; }
+        .grid-players { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-top: 10px; }
 
         .draft-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-top: 15px; }
         .draft-card { background: #18181c; border: 2px solid #32323d; padding: 10px; border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.2s; }
@@ -52,6 +53,7 @@
 
         .market-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
         .game-card { background: #18181c; border-radius: 12px; padding: 12px; border: 3px solid #32323d; position: relative; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.4); display: flex; flex-direction: column; justify-content: flex-end; }
+        .card-count-badge { position: absolute; top: -8px; right: -8px; z-index: 5; background: #00f2fe; color: #06222b; font-weight: 900; font-size: 0.95rem; min-width: 32px; height: 32px; padding: 0 8px; border-radius: 16px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.5); border: 2px solid #0b3b47; }
         .game-card img { width: 100%; height: 160px; object-fit: contain; border-radius: 8px; margin-bottom: 10px; background: #121214; border: 1px solid #2a2a32; display: block; }
 
         .img-fallback { width: 100%; height: 160px; display: flex; align-items: center; justify-content: center; background: #2a2a35; border-radius: 8px; margin-bottom: 10px; font-weight: bold; padding: 10px; color: #a78bfa; word-break: keep-all; border: 1px solid #2a2a32; }
@@ -65,14 +67,31 @@
         .card-cost-badge { background: #f5af19; color: #111; padding: 2px 6px; border-radius: 50%; font-weight: 800; font-size: 0.85rem; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; }
         .card-top-inner { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; margin-bottom: 10px; }
 
+        /* 암석 종류 배지 (화성암/변성암/퇴적암) */
+        .rock-badge { font-size: 0.82rem; font-weight: 800; text-align: center; padding: 4px 0; border-radius: 6px; margin-bottom: 8px; letter-spacing: 0.5px; }
+        .rock-vol { background: #7f1d1d; color: #fca5a5; }   /* 화성암 */
+        .rock-meta { background: #4c1d95; color: #c4b5fd; }  /* 변성암 */
+        .rock-sed { background: #78350f; color: #fcd34d; }   /* 퇴적암 */
+        .rock-none { background: #27272e; color: #6b7280; }  /* 일반 */
+        .rock-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; font-size: 0.85rem; }
+        .rock-legend span { padding: 5px 12px; border-radius: 8px; font-weight: 800; }
+
         .landmark-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 10px; }
         .landmark-card { background: #2a2a35; padding: 10px; border-radius: 8px; text-align: center; opacity: 0.5; font-size: 0.85rem; border: 2px solid #4b5563; }
         .landmark-card.built { border-color: #f5af19; opacity: 1; background: #3a2a10; box-shadow: 0 0 10px rgba(245,175,25,0.2); }
+        .landmark-effect { font-size: 0.72rem; color: #cbd5e1; line-height: 1.35; margin: 6px 0 4px; word-break: keep-all; min-height: 30px; }
         .btn { padding: 10px 15px; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; display: inline-block; text-align: center; transition: all 0.2s; }
         .btn-primary { background: #3b82f6; color: #fff; } .btn-success { background: #16a34a; color: #fff; }
         .btn-accent { background: #00f2fe; color: #111; } .btn-disabled { background: #4b5563 !important; color: #9ca3af !important; cursor: not-allowed; opacity: 0.4; }
         button:disabled { background: #4b5563 !important; color: #9ca3af !important; cursor: not-allowed; opacity: 0.4; }
         .log-box { background: #121214; padding: 10px; border-radius: 6px; height: 180px; overflow-y: auto; font-size: 0.8rem; margin-top: 15px; line-height: 1.4; color: #cbd5e1; }
+        .game-guide { margin-top: 12px; background: #18181c; border: 1px solid #32323d; border-radius: 8px; padding: 10px 12px; }
+        .game-guide summary { cursor: pointer; font-weight: 800; color: #00f2fe; font-size: 0.95rem; }
+        .game-guide .guide-body { margin-top: 10px; font-size: 0.8rem; color: #cbd5e1; line-height: 1.5; max-height: 320px; overflow-y: auto; }
+        .game-guide .guide-body b { color: #e2e8f0; display: block; margin-top: 8px; }
+        .game-guide .guide-body ul { margin: 4px 0 4px 16px; padding: 0; }
+        .game-guide .guide-body li { margin-bottom: 3px; }
+        .game-guide .guide-body u { text-decoration: underline; color: #a78bfa; }
         details summary { cursor: pointer; font-weight: 700; color: #00f2fe; padding: 5px 0; }
     </style>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -93,19 +112,21 @@
             <button class="btn btn-accent" style="width:100%; margin-top:10px;" onclick="connectToRoom()">모둠 방 연결하기</button>
         </div>
 
-        <!-- ▼▼▼ [신규] 관리자 모드 ▼▼▼ -->
+        <!-- ▼▼▼ [신규] 관리자 모드 — 방 입장 '전'에 카드 데이터를 설정 (비밀번호 잠금) ▼▼▼ -->
         <div class="setup-box">
             <details id="adminDetails">
-                <summary>🛠️ 관리자 모드 — 카드 데이터(CSV) 입력 / 점검 </summary>
+                <summary>🛠️ 관리자 모드 — 카드 데이터(CSV) 입력 / 점검 (방 입장 전에 설정)</summary>
 
                 <div id="adminLockArea" style="margin-top:12px;">
+                    <p style="font-size:0.85rem; color:#9ca3af;">관리자 비밀번호를 입력하면 카드 편집 도구가 열립니다.</p>
                     <input type="password" id="adminPwInput" placeholder="관리자 비밀번호" onkeydown="if(event.key==='Enter'){unlockAdmin();}">
                     <button class="btn btn-primary" style="width:100%; margin-top:8px;" onclick="unlockAdmin()">🔓 잠금 해제</button>
                 </div>
 
                 <div id="adminToolArea" style="display:none; margin-top:12px;">
                     <p style="font-size:0.85rem; color:#9ca3af; margin-bottom:8px;">
-                        구글 시트에서 셀 전체(A1부터)를 복사해 아래에 붙여넣고 [적용]을 누르세요. 셀 안에 쉼표가 있어도 안전하게 처리됩니다.<br>
+                        <b style="color:#00f2fe;">가장 안전한 방법:</b> 구글 시트에서 카드 영역 셀을 드래그→복사(Ctrl+C)→아래에 붙여넣기(Ctrl+V). (탭 구분 자동 인식 · 한글 깨짐/칸 밀림 없음)<br>
+                        또는 CSV 파일 내용을 그대로 붙여넣어도 됩니다. 셀 안에 쉼표가 있어도 안전합니다.<br>
                         (열 순서: A그룹 · B암석 · C타입 · D이름 · E주사위 · F보상타입 · G보상값 · H비용 · I이미지)
                     </p>
                     <textarea id="adminCsvInput" placeholder="group,rockType,type,name,dice,rewardType,rewardValue,cost,imgName&#10;A,vol,green,한탄강 현무암,3,coin,1,2,"></textarea>
@@ -122,6 +143,21 @@
     </div>
 
     <div id="setupScreen" class="screen">
+        <!-- 대기 모드 안내/전환 -->
+        <div class="setup-box" style="display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap;">
+            <span style="font-size:0.9rem; color:#cbd5e1;">카드는 <b style="color:#00f2fe;">한 명(호스트)</b>만 고릅니다. 나머지는 오른쪽 버튼으로 대기하세요.</span>
+            <button class="btn" id="waitToggleBtn" style="background:#6d28d9; color:#fff;" onclick="setWaiting(true)">🙋 나는 대기 (호스트가 카드 고름)</button>
+        </div>
+
+        <!-- 대기 패널 (대기 중일 때만 표시) -->
+        <div id="waitingPanel" class="seat-pick-overlay" style="display:none;">
+            <h2>⏳ 대기 중…</h2>
+            <p style="color:#9ca3af; margin-bottom:12px;">호스트가 카드를 고르는 중입니다. 게임이 시작되면 이 화면은 자동으로 넘어갑니다.</p>
+            <button class="btn btn-primary" onclick="setWaiting(false)">↩️ 취소하고 내가 직접 고르기</button>
+        </div>
+
+        <!-- 호스트(카드 고르는 사람) 영역 -->
+        <div id="setupHostArea">
         <div class="setup-box">
             <h3>🖥️ 게임 진행 방식 선택</h3>
             <select id="gameModeSelect">
@@ -132,11 +168,19 @@
         </div>
 
         <div class="setup-box">
-            <h3>👥 플레이어 3인 이름 등록</h3>
-            <div class="grid-3">
+            <h3>👥 플레이어 수 &amp; 이름 등록</h3>
+            <label style="display:block; font-size:0.9rem; color:#cbd5e1; margin-bottom:6px;">플레이어 수
+                <select id="playerCountSelect" onchange="updatePlayerNameInputs()" style="width:auto; display:inline-block; margin-left:8px;">
+                    <option value="2">2명</option>
+                    <option value="3" selected>3명</option>
+                    <option value="4">4명</option>
+                </select>
+            </label>
+            <div class="grid-players" id="playerNameGrid">
                 <input type="text" id="p1Name" value="플레이어A">
                 <input type="text" id="p2Name" value="플레이어B">
                 <input type="text" id="p3Name" value="플레이어C">
+                <input type="text" id="p4Name" value="플레이어D" style="display:none;">
             </div>
         </div>
         <div class="setup-box">
@@ -146,6 +190,7 @@
             <div class="draft-grid" id="draftGridArea"></div>
             <button class="btn btn-success" style="width:100%; margin-top:20px; font-size:1.1rem; padding:12px;" onclick="tryStartGame()">🎮 게임판 조립 및 시작하기</button>
             <button class="btn" style="width:100%; background:#ef4444; color:#fff; margin-top:15px; font-size:0.9rem;" onclick="forceResetRoomCurrent()">⚠️ 방 데이터 초기화 (처음부터 다시)</button>
+        </div>
         </div>
     </div>
 
@@ -158,6 +203,44 @@
                 <button class="btn" style="width:100%; background:#4b5563; color:#fff; margin-top:8px; font-size:0.85rem;" onclick="changeSeat()">🔁 내 좌석 다시 선택 (온라인)</button>
                 <button class="btn" style="width:100%; background:#4b5563; color:#fff; margin-top:8px; font-size:0.85rem;" onclick="forceResetRoomCurrent()">⚠️ 방 폭파 및 새 판 짜기</button>
                 <div class="log-box" id="logBox"></div>
+
+                <details class="game-guide">
+                    <summary>📖 게임 안내 (카드·정책·조합 효과)</summary>
+                    <div class="guide-body">
+                        <b>🎴 카드 색깔</b>
+                        <ul>
+                            <li>🟢 <b>그린(지역 산업)</b>: <u>내 차례</u>에 주사위 총합이 맞으면 나만 골드/잎새 수확.</li>
+                            <li>🔵 <b>블루(공공 시설)</b>: <u>누구 차례든</u> 총합이 맞으면 수확. 게다가 구매 <b>할인</b>을 줍니다.</li>
+                            <li>🔴 <b>레드(난개발)</b>: <u>상대 차례</u>에 발동 → 그 사람 골드를 내가 빼앗음. 발동에 🍃1 필요.</li>
+                            <li>🟣 <b>퍼플(문화·무역)</b>: 내 차례 발동. 모두에게서 골드 강탈 또는 그린 카드 교환.</li>
+                        </ul>
+                        <b>🪨 암석 &amp; 할인 (블루 카드가 줌)</b>
+                        <ul>
+                            <li>🌋 화성암 −1G · 💎 변성암 −2G · 🏜️ 퇴적암 −3G</li>
+                            <li>블루 카드를 모을수록 카드·랜드마크가 싸집니다. (할인 최대 −5G, 최소 1G)</li>
+                        </ul>
+                        <b>🍃 잎새</b>
+                        <ul><li>레드 발동·방어, 랜드마크 건설, 에코 환전에 쓰는 자원. (0 밑으로는 안 내려감)</li></ul>
+                        <b>🏰 랜드마크 (4개 모두 완공 시 승리)</b>
+                        <ul>
+                            <li>🚌 셔틀버스: 주사위 <b>2개</b> 사용</li>
+                            <li>🏪 지오푸드타운: 그린 수익 <b>+1</b></li>
+                            <li>🔋 신재생센터: <b>더블</b> 나오면 추가 턴</li>
+                            <li>🏅 유네스코 인증: 최종 완공 = 승리</li>
+                        </ul>
+                        <b>📜 3개년 순환 정책</b>
+                        <ul>
+                            <li><b>A 에코 환전</b>: 🍃2 → 5골드</li>
+                            <li><b>B 환경 실드</b>: 🍃1 써서 레드 약탈 방어</li>
+                            <li><b>C 개발 제한</b>: 레드 구매 시 🍃2 추가 지불</li>
+                        </ul>
+                        <b>💡 조합 팁</b>
+                        <ul>
+                            <li>퇴적암 블루로 <b>할인</b>을 쌓고 → 지오푸드타운으로 <b>그린 수익</b>을 키우면 싸게 빠르게 성장.</li>
+                            <li>레드는 상대가 자주 굴리는 숫자를 노려두면 효과적. 단 정책 B가 걸리면 방어당할 수 있음.</li>
+                        </ul>
+                    </div>
+                </details>
             </div>
             <div class="main-board">
                 <div class="turn-panel">
@@ -207,7 +290,7 @@
       };
 
     // ⚠️ [2. 구글 스프레드시트 CSV 링크] (관리자 모드로 붙여넣으면 이 링크 없이도 동작)
-    const googleSheetCsvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS6NRt4jKmmkjh2kn87d7YrTVrZAz2oanec5mAzBGKSYpRqsR0WFaPFbsZBUjGUbpiHK9HgkeKjMwtW/pub?gid=0&single=true&output=csv";
+    const googleSheetCsvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSjFMvdzDmZG51lj5XfzSi5iR7B3aJuJoa9NiBoVo_uLwcdo0N-jnQCQGlc3A_2_gIGShQfFV8A44sL/pub?gid=0&single=true&output=csv";
 
     // ⚠️ [3. 이미지 설정] ─────────────────────────────────────────────
     // 방법 A (추천): 저장소에 연도 폴더(예: 2026)를 만들고, 사진 파일명을 '카드이름.jpg' 로 저장.
@@ -216,7 +299,7 @@
     // 방법 C: I열에 구글드라이브 ID나 전체 URL을 적어도 인식.
     const IMAGE_YEAR = "2026";              // ← 매년 이 값만 바꾸면 됩니다 (예: 2027). 사진은 저장소의 같은 이름 폴더에 보관.
     const IMAGE_BASE = IMAGE_YEAR + "/";    // 예: 2026/
-    const AUTO_IMG_EXT = "png";             // I열을 비웠을 때 자동으로 붙일 확장자 (png면 "png"로)
+    const AUTO_IMG_EXT = "jpg";             // I열을 비웠을 때 자동으로 붙일 확장자 (png면 "png"로)
     // ──────────────────────────────────────────────────────────────
 
     // ⚠️ [4. 관리자 비밀번호] 카드 데이터 편집 도구를 여는 암호. 원하는 값으로 바꾸세요.
@@ -225,6 +308,8 @@
 
     const VALID_TYPES = ['blue','green','red','purple'];
     const VALID_REWARDS = ['leaf','coin','coin_per_vol','coin_per_sed','swap_green','steal'];
+    const VALID_ROCKS = ['vol','meta','sed','none','-','']; // 허용되는 B열 값
+    const MAX_DISCOUNT = 5;   // [신규] 블루 카드 할인 총액 상한 (원하는 값으로 조정하세요)
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
@@ -237,6 +322,21 @@
     let mySeat = null;
     let stateRef = null;
     let cardsReady = false;   // [신규] 관리자 모드로 카드를 이미 설정했는지 → 접속 시 자동로드로 덮어쓰지 않게
+    let waitingMode = false;  // [신규] 이 기기가 '대기(패스)' 상태인지 (화면만 바꿈, Firebase는 안 건드림)
+
+    // [신규] 대기 모드 전환 (아무 때나 눌러도 안전 — 이 기기 화면만 바꿈)
+    function setWaiting(on) {
+        waitingMode = on;
+        applyWaitingView();
+    }
+    function applyWaitingView() {
+        const host = document.getElementById('setupHostArea');
+        const wp = document.getElementById('waitingPanel');
+        const tb = document.getElementById('waitToggleBtn');
+        if(host) host.style.display = waitingMode ? 'none' : 'block';
+        if(wp) wp.style.display = waitingMode ? 'block' : 'none';
+        if(tb) tb.style.display = waitingMode ? 'none' : 'inline-block';
+    }
     let authPromise = null;   // [신규] 익명 인증(보안 규칙용)
 
     // [신규] 익명 인증: 보안 규칙을 'auth != null'로 잠갔을 때 필요.
@@ -251,10 +351,10 @@
     ensureAuth();
 
     const landmarkSpecs = [
-        { name: "🚌 지질트레일 셔틀버스", gCost: 6, lCost: 0 },
-        { name: "🏪 지오푸드 복합타운", gCost: 12, lCost: 3 },
-        { name: "🔋 신재생에너지 교육센터", gCost: 22, lCost: 8 },
-        { name: "🏅 유네스코 세계인증서", gCost: 35, lCost: 15 }
+        { name: "🚌 지질트레일 셔틀버스", gCost: 6, lCost: 0, effect: "주사위를 2개 굴릴 수 있게 됨 (총합 범위 확대)" },
+        { name: "🏪 지오푸드 복합타운", gCost: 12, lCost: 3, effect: "내 그린 카드 골드 수확 시 +1G 추가" },
+        { name: "🔋 신재생에너지 교육센터", gCost: 22, lCost: 8, effect: "주사위 2개가 같은 눈(더블)이면 추가 턴 1회" },
+        { name: "🏅 유네스코 세계인증서", gCost: 35, lCost: 15, effect: "최종 랜드마크 — 4개 모두 완공 시 즉시 승리" }
     ];
 
     const backup24Cards = [];
@@ -309,6 +409,7 @@
                 currentGameState = null;
                 showScreen('setupScreen');
                 renderDraftGrid();
+                applyWaitingView();
             } else {
                 currentGameState = state;
                 if(state.status === 'playing') {
@@ -317,26 +418,28 @@
                 } else {
                     showScreen('setupScreen');
                     renderDraftGrid();
+                    applyWaitingView();
                 }
             }
         });
     }
 
     async function loadCardsWithFallback() {
+        // 캐시 버스터: 매번 다른 값을 붙여 브라우저 캐시를 우회 (시트 수정 즉시 반영에 도움)
+        const cb = "&_cb=" + Date.now();
         try {
-            const r = await fetch(googleSheetCsvUrl);
+            const r = await fetch(googleSheetCsvUrl + cb, { cache: "no-store" });
             if(r.ok) return parseCsvToCards(await r.text());
         } catch(e) { console.warn("직접 CSV 로드 실패, 프록시 시도:", e); }
         try {
-            const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(googleSheetCsvUrl);
-            const r2 = await fetch(proxyUrl);
+            const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(googleSheetCsvUrl + cb);
+            const r2 = await fetch(proxyUrl, { cache: "no-store" });
             if(r2.ok) return parseCsvToCards(await r2.text());
         } catch(e) { console.warn("프록시 CSV 로드도 실패:", e); }
         console.warn("시트 로드 실패 → 백업 카드 사용. 관리자 모드로 직접 붙여넣어 주세요.");
         return [...backup24Cards];
     }
 
-    // [신규] 구글 시트에서 다시 불러오기 (관리자 버튼)
     // [신규] 관리자 비밀번호 잠금 해제
     function unlockAdmin() {
         const pw = document.getElementById('adminPwInput').value;
@@ -379,6 +482,8 @@
                 problems.push(`⚠️ ${tag}: C열 type 값이 '${c.type}' → blue/green/red/purple 중 하나여야 함 (열이 밀렸을 가능성)`);
             if(!VALID_REWARDS.includes(c.rewardType))
                 problems.push(`⚠️ ${tag}: F열 rewardType 값이 '${c.rewardType}' → 허용값이 아님 (열이 밀렸을 가능성)`);
+            if(!VALID_ROCKS.includes(c.rockType))
+                problems.push(`⚠️ ${tag}: B열 암석 값이 '${c.rockType}' → vol/meta/sed/- 중 하나여야 함 (오타 또는 열 밀림)`);
             if(!c.triggerDice || c.triggerDice.length === 0)
                 problems.push(`⚠️ ${tag}: E열 dice 값이 비었거나 숫자가 아님`);
         });
@@ -423,10 +528,10 @@
         return !(diceOk && typeOk);
     }
 
-    // [신규] 따옴표를 존중하는 CSV 한 줄 파서
-    // 구글 시트는 쉼표가 든 셀을 "..." 로 감싸 내보냅니다. 단순 split(',')은 그 안의 쉼표까지
-    // 칸으로 쪼개 한 칸씩 밀리게 만듭니다. 이 파서는 따옴표 안의 쉼표를 안전하게 무시합니다.
-    function parseCsvLine(line) {
+    // [신규] 구분자(쉼표/탭)를 지정해 한 줄을 파싱. 따옴표 안의 구분자는 무시.
+    // 구글 시트에서 셀을 '복사'하면 탭(\t)으로 구분되고, 'CSV 다운로드'하면 쉼표(,)로 구분됩니다.
+    // 둘 다 자동 인식하므로, 시트에서 셀 범위를 그대로 복사해 붙여넣어도 됩니다(가장 안전).
+    function parseDelimitedLine(line, delim) {
         const out = [];
         let cur = '';
         let inQ = false;
@@ -439,7 +544,7 @@
                 } else { cur += ch; }
             } else {
                 if(ch === '"') inQ = true;
-                else if(ch === ',') { out.push(cur); cur = ''; }
+                else if(ch === delim) { out.push(cur); cur = ''; }
                 else cur += ch;
             }
         }
@@ -447,18 +552,25 @@
         return out.map(c => c.trim());
     }
 
+    // 첫 데이터 줄에 탭이 있으면 탭, 없으면 쉼표를 구분자로 사용
+    function detectDelimiter(text) {
+        const firstLine = (text.split('\n').find(l => l.trim().length > 0)) || '';
+        return firstLine.indexOf('\t') !== -1 ? '\t' : ',';
+    }
+
     function parseCsvToCards(csvText) {
-        // 주의: 셀 안에 줄바꿈이 있으면 행이 깨질 수 있으니, 이미지 이름/카드 이름에는 줄바꿈을 넣지 마세요.
+        // 주의: 셀 안에 줄바꿈이 있으면 행이 깨질 수 있으니, 이름/이미지 이름에는 줄바꿈을 넣지 마세요.
+        const delim = detectDelimiter(csvText);
         const lines = csvText.split('\n').map(l => l.replace(/\r$/,'')).filter(l => l.trim().length > 0);
         if(lines.length === 0) return [...backup24Cards];
 
-        const firstCols = parseCsvLine(lines[0]);
+        const firstCols = parseDelimitedLine(lines[0], delim);
         let start = looksLikeHeader(firstCols) ? 1 : 0;
 
         let list = [];
         let idCounter = 1;
         for(let i = start; i < lines.length; i++) {
-            const cols = parseCsvLine(lines[i]);   // [수정] 따옴표 인식 파서 사용
+            const cols = parseDelimitedLine(lines[i], delim);   // [수정] 탭/쉼표 자동 인식
             if(cols.length < 8) continue;
 
             const name = cols[3] || `유산 ${idCounter}`;
@@ -489,6 +601,15 @@
                     <div class="img-fallback" style="display:none;">${card.name}</div>`;
         }
         return `<div class="img-fallback" style="display:flex;">${card.name}</div>`;
+    }
+
+    // [신규] 암석 종류 배지 (화성암/변성암/퇴적암)
+    function rockBadge(rockType) {
+        const rt = (rockType || '').toLowerCase();
+        if(rt === 'vol')  return '<div class="rock-badge rock-vol">🌋 화성암</div>';
+        if(rt === 'meta') return '<div class="rock-badge rock-meta">💎 변성암</div>';
+        if(rt === 'sed')  return '<div class="rock-badge rock-sed">🏜️ 퇴적암</div>';
+        return '<div class="rock-badge rock-none">· 일반 ·</div>';
     }
 
     function forceResetRoomCurrent() {
@@ -545,12 +666,31 @@
         renderGameUI(currentGameState);
     }
 
+    // [신규] 선택한 플레이어 수만큼 이름 입력칸을 보이거나 숨김
+    function updatePlayerNameInputs() {
+        const n = parseInt(document.getElementById('playerCountSelect').value) || 3;
+        for(let i = 1; i <= 4; i++) {
+            const el = document.getElementById('p' + i + 'Name');
+            if(el) el.style.display = (i <= n) ? 'block' : 'none';
+        }
+    }
+
     function tryStartGame() {
+        // [신규] 이미 진행 중인 방이면 덮어쓰기 전 확인 (뒤늦게 시작 눌러 판이 리셋되는 사고 방지)
+        if(currentGameState && currentGameState.status === 'playing') {
+            if(!confirm("⚠️ 이 방은 이미 게임이 진행 중입니다.\n지금 시작하면 진행 중이던 판이 사라지고 새 판으로 덮어씁니다.\n정말 새로 시작할까요?")) return;
+        }
         if(selectedDraftIds.length !== 12) return alert("12장의 카드를 엄선해 주세요!");
         const gameMode = document.getElementById('gameModeSelect').value;
-        const p1 = document.getElementById('p1Name').value.trim() || "플레이어A";
-        const p2 = document.getElementById('p2Name').value.trim() || "플레이어B";
-        const p3 = document.getElementById('p3Name').value.trim() || "플레이어C";
+        const playerCount = parseInt(document.getElementById('playerCountSelect').value) || 3;
+
+        // [신규] 선택한 수만큼 플레이어 생성 (2~4명)
+        const defaultNames = ["플레이어A", "플레이어B", "플레이어C", "플레이어D"];
+        const players = [];
+        for(let i = 0; i < playerCount; i++) {
+            const nm = (document.getElementById('p' + (i+1) + 'Name').value || '').trim() || defaultNames[i];
+            players.push({ id: i, name: nm, gold: 5, leaf: 0, cards: [{ id: 0, name: "기본 자산 카드", type: "green", rockType: "none", triggerDice: [1], rewardType: "coin", rewardValue: 1 }], landmarks: [false,false,false,false] });
+        }
 
         let marketCards = []; let reserveCards = [];
         local24Cards.forEach(c => {
@@ -564,21 +704,16 @@
             return diceA - diceB;
         });
 
-        const initialCard = { id: 0, name: "기본 자산 카드", type: "green", rockType: "none", triggerDice: [1], rewardType: "coin", rewardValue: 1 };
         const initialPolicies = ['A', 'B', 'C'].sort(() => Math.random() - 0.5);
 
         const initialGameState = {
             status: 'playing',
             gameMode: gameMode,
-            players: [
-                { id: 0, name: p1, gold: 5, leaf: 0, cards: [initialCard], landmarks: [false,false,false,false] },
-                { id: 1, name: p2, gold: 5, leaf: 0, cards: [initialCard], landmarks: [false,false,false,false] },
-                { id: 2, name: p3, gold: 5, leaf: 0, cards: [initialCard], landmarks: [false,false,false,false] }
-            ],
+            players: players,
             marketCards: marketCards, reserveCards: reserveCards,
             activePlayerIdx: 0, currentRound: 1, diceRolledThisTurn: false, policyAUsedThisTurn: false,
             policyOrder: initialPolicies,
-            logs: ["[시스템] 게임이 시작되었습니다. (모드: " + (gameMode==='online'?'온라인':'핫시트') + ")"]
+            logs: ["[시스템] " + playerCount + "인 게임이 시작되었습니다. (모드: " + (gameMode==='online'?'온라인':'핫시트') + ")"]
         };
         db.ref(`geoville/rooms/${roomName}/history`).remove();
         db.ref(`geoville/rooms/${roomName}/gameState`).set(initialGameState);
@@ -598,9 +733,28 @@
         return baseValue;
     }
 
+    // [신규] 로그에 계산 과정을 보여주기 위한 설명 문자열
+    function rewardBreakdown(player, card) {
+        const baseValue = parseInt(card.rewardValue) || 0;
+        if (card.rewardType === 'coin_per_vol') {
+            const count = (player.cards || []).filter(c => c && c.rockType === 'vol').length;
+            return ` (화성암 ${count}장 × ${baseValue})`;
+        }
+        if (card.rewardType === 'coin_per_sed') {
+            const count = (player.cards || []).filter(c => c && c.rockType === 'sed').length;
+            return ` (퇴적암 ${count}장 × ${baseValue})`;
+        }
+        return '';
+    }
+
     function renderGameUI(state) {
         const seatArea = document.getElementById('seatBannerArea');
         const lockArea = document.getElementById('turnLockArea');
+        // [신규] 저장된 좌석이 현재 인원 수를 벗어나면(예: 4인→3인 새 판) 재선택하도록 초기화
+        if(mySeat !== null && mySeat >= state.players.length) {
+            mySeat = null;
+            try { localStorage.removeItem('geoville_seat_' + roomName); } catch(e) {}
+        }
         if(state.gameMode === 'online') {
             if(mySeat === null) {
                 seatArea.innerHTML = `
@@ -648,6 +802,7 @@
             let disc = 0; (p.cards || []).forEach(c => {
                 if (c && c.type==='blue') { if(c.rockType=='vol') disc+=1; if(c.rockType=='meta') disc+=2; if(c.rockType=='sed') disc+=3; }
             });
+            disc = Math.min(disc, MAX_DISCOUNT);   // [신규] 상한 적용
             const isCur = idx === state.activePlayerIdx ? 'active-turn' : '';
             let cardCount = ((p.cards || []).length > 0) ? (p.cards.length - 1) : 0;
             const meTag = (state.gameMode==='online' && mySeat===idx) ? ' 🟢(나)' : '';
@@ -664,6 +819,7 @@
         let myDiscount = 0; (activePlayer.cards || []).forEach(c => {
             if (c && c.type==='blue') { if(c.rockType=='vol') myDiscount+=1; if(c.rockType=='meta') myDiscount+=2; if(c.rockType=='sed') myDiscount+=3; }
         });
+        myDiscount = Math.min(myDiscount, MAX_DISCOUNT);   // [신규] 상한 적용
 
         const lg = document.getElementById('landmarkGrid'); lg.innerHTML = '';
         landmarkSpecs.forEach((spec, sIdx) => {
@@ -676,24 +832,31 @@
             lg.innerHTML += `
                 <div class="landmark-card ${isBuilt?'built':''}">
                     <strong>${spec.name}</strong><br>${actualCost}G / 🍃${spec.lCost}
+                    <div class="landmark-effect">✨ ${spec.effect}</div>
                     <button ${buyAttr} style="margin-top:4px; width:100%; font-size:0.75rem;">${isBuilt?'완공됨':'건설'}</button>
                 </div>
             `;
         });
 
         const tabContainer = document.getElementById('tabContainer');
-        tabContainer.innerHTML = `
-            <button class="tab-btn ${activeTab === 'market' ? 'active' : ''}" onclick="switchTab('market')">🏪 중앙 상점</button>
-            <button class="tab-btn ${activeTab === 0 ? 'active' : ''}" onclick="switchTab(0)">🎒 ${state.players[0].name}</button>
-            <button class="tab-btn ${activeTab === 1 ? 'active' : ''}" onclick="switchTab(1)">🎒 ${state.players[1].name}</button>
-            <button class="tab-btn ${activeTab === 2 ? 'active' : ''}" onclick="switchTab(2)">🎒 ${state.players[2].name}</button>
-        `;
+        let tabsHTML = `<button class="tab-btn ${activeTab === 'market' ? 'active' : ''}" onclick="switchTab('market')">🏪 중앙 상점</button>`;
+        state.players.forEach((pl, idx) => {
+            tabsHTML += `<button class="tab-btn ${activeTab === idx ? 'active' : ''}" onclick="switchTab(${idx})">🎒 ${pl.name}</button>`;
+        });
+        tabContainer.innerHTML = tabsHTML;
 
         const tabContent = document.getElementById('tabContentArea');
         tabContent.innerHTML = '';
 
         if (activeTab === 'market') {
-            let mgHTML = '<div class="market-grid">';
+            let mgHTML = `
+                <div class="rock-legend">
+                    <span class="rock-vol">🌋 화성암</span>
+                    <span class="rock-meta">💎 변성암</span>
+                    <span class="rock-sed">🏜️ 퇴적암</span>
+                    <span class="rock-none">· 일반 ·</span>
+                </div>
+                <div class="market-grid">`;
             (state.marketCards || []).forEach((card, marketIndex) => {
                 let actualCost = Math.max(1, card.cost - myDiscount);
                 let lReq = (card.type === 'red' && activePolicyCode === 'C') ? 2 : 0;
@@ -707,15 +870,16 @@
 
                 mgHTML += `
                     <div class="game-card ${card.type}">
+                        ${rockBadge(card.rockType)}
                         <div class="card-top-inner">
                             <span class="card-dice-badge">🎲 ${card.triggerDice.join(',')}</span>
                             <span class="card-cost-badge">${actualCost}</span>
                         </div>
                         ${imgTag(card)}
                         <div style="font-size:0.85rem; border-top:1px dashed #3a3a42; padding-top:10px; margin-top:auto;">
-                            인수: ${costDisplay} | 남음: <strong>${card.count}</strong>
+                            금액: ${costDisplay} | 남음: <strong>${card.count}</strong>
                         </div>
-                        <button ${buyAttr} style="width:100%; margin-top:8px; padding:10px;">자원 인수</button>
+                        <button ${buyAttr} style="width:100%; margin-top:8px; padding:10px;">구매</button>
                     </div>
                 `;
             });
@@ -726,12 +890,31 @@
             let ogHTML = '<div class="market-grid">';
 
             if (!p.cards || p.cards.length <= 1) {
-                ogHTML += `<p style="color:#9ca3af; grid-column:span 3; text-align:center; padding:20px; font-size:1.1rem;">아직 인수한 지질 자산이 없습니다.</p>`;
+                ogHTML += `<p style="color:#9ca3af; grid-column:span 3; text-align:center; padding:20px; font-size:1.1rem;">아직 보유한 지질 자산이 없습니다.</p>`;
             } else {
-                p.cards.forEach(card => {
-                    if (card.id === 0) return;
+                // [신규] 같은 카드끼리 묶어서 장수를 셈 (id 기준, 없으면 이름 기준)
+                const groups = [];
+                const indexByKey = {};
+                (p.cards || []).forEach(card => {
+                    if (!card || card.id === 0) return;   // 기본 자산 카드 제외
+                    const key = (card.id != null ? 'id' + card.id : 'nm' + card.name);
+                    if (indexByKey[key] === undefined) {
+                        indexByKey[key] = groups.length;
+                        groups.push({ card: card, count: 1 });
+                    } else {
+                        groups[indexByKey[key]].count += 1;
+                    }
+                });
+
+                if (groups.length === 0) {
+                    ogHTML += `<p style="color:#9ca3af; grid-column:span 3; text-align:center; padding:20px; font-size:1.1rem;">아직 보유한 지질 자산이 없습니다.</p>`;
+                }
+                groups.forEach(g => {
+                    const card = g.card;
                     ogHTML += `
                         <div class="game-card ${card.type}">
+                            <span class="card-count-badge">${g.count}장</span>
+                            ${rockBadge(card.rockType)}
                             <div class="card-top-inner">
                                 <span class="card-dice-badge">🎲 ${card.triggerDice.join(',')}</span>
                             </div>
@@ -765,7 +948,7 @@
     function sendDiceResolve() {
         try {
             if(!guardTurn()) return;
-            if(currentGameState.diceRolledThisTurn) return alert("이미 정산이 끝났습니다. 카드 인수 또는 패스를 진행하세요.");
+            if(currentGameState.diceRolledThisTurn) return alert("이미 정산이 끝났습니다. 카드 구매 또는 패스를 진행하세요.");
             const v1 = parseInt(document.getElementById('diceVal1').value);
             const rawV2 = document.getElementById('diceVal2').value;
             const v2 = parseInt(rawV2) || 0;
@@ -832,7 +1015,7 @@
                                 state.logs.unshift(`🍃 [보존 수확] ${p.name} 잎새 +${rwdAmt}개.`);
                             } else {
                                 p.gold = (parseInt(p.gold) || 0) + rwdAmt;
-                                state.logs.unshift(`💰 [보존 수확] ${p.name} 골드 +${rwdAmt}G.`);
+                                state.logs.unshift(`💰 [보존 수확] ${p.name} 골드 +${rwdAmt}G.${rewardBreakdown(p, card)}`);
                             }
                         }
                     });
@@ -850,7 +1033,7 @@
                             state.logs.unshift(`✨ [관광 가치] ${activePlayer.name} 잎새 +${rwdAmt}개.`);
                         } else {
                             activePlayer.gold = (parseInt(activePlayer.gold) || 0) + rwdAmt;
-                            state.logs.unshift(`✨ [지역 수익] ${activePlayer.name} 골드 +${rwdAmt}G 수확.`);
+                            state.logs.unshift(`✨ [지역 수익] ${activePlayer.name} 골드 +${rwdAmt}G 수확.${rewardBreakdown(activePlayer, card)}`);
                         }
                     }
                 });
@@ -921,7 +1104,7 @@
         card.count -= 1;
         if(!activePlayer.cards) activePlayer.cards = [];
         activePlayer.cards.push({ id: card.id, name: card.name, type: card.type, rockType: card.rockType, triggerDice: card.triggerDice, rewardType: card.rewardType, rewardValue: card.rewardValue, imgUrl: card.imgUrl });
-        state.logs.unshift(`🛒 [인수완료] ${activePlayer.name}님이 [${card.name}]을 소유했습니다.`);
+        state.logs.unshift(`🛒 [구매완료] ${activePlayer.name}님이 [${card.name}]을 소유했습니다.`);
 
         if(card.count === 0) {
             if(state.reserveCards && state.reserveCards.length > 0) {
